@@ -2,15 +2,15 @@
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
-package btcutil
+package bchutil
 
 import (
 	"bytes"
 	"fmt"
 	"io"
 
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/wire"
+	"github.com/gcash/bchd/chaincfg/chainhash"
+	"github.com/gcash/bchd/wire"
 )
 
 // OutOfRangeError describes an error due to accessing an element that is out
@@ -105,7 +105,7 @@ func (b *Block) Hash() *chainhash.Hash {
 	return &hash
 }
 
-// Tx returns a wrapped transaction (btcutil.Tx) for the transaction at the
+// Tx returns a wrapped transaction (bchutil.Tx) for the transaction at the
 // specified index in the Block.  The supplied index is 0 based.  That is to
 // say, the first transaction in the block is txNum 0.  This is nearly
 // equivalent to accessing the raw transaction (wire.MsgTx) from the
@@ -137,10 +137,10 @@ func (b *Block) Tx(txNum int) (*Tx, error) {
 	return newTx, nil
 }
 
-// Transactions returns a slice of wrapped transactions (btcutil.Tx) for all
+// Transactions returns a slice of wrapped transactions (bchutil.Tx) for all
 // transactions in the Block.  This is nearly equivalent to accessing the raw
 // transactions (wire.MsgTx) in the underlying wire.MsgBlock, however it
-// instead provides easy access to wrapped versions (btcutil.Tx) of them.
+// instead provides easy access to wrapped versions (bchutil.Tx) of them.
 func (b *Block) Transactions() []*Tx {
 	// Return transactions if they have ALL already been generated.  This
 	// flag is necessary because the wrapped transactions are lazily

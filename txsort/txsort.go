@@ -11,8 +11,8 @@ import (
 	"bytes"
 	"sort"
 
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/wire"
+	"github.com/gcash/bchd/chaincfg/chainhash"
+	"github.com/gcash/bchd/wire"
 )
 
 // InPlaceSort modifies the passed transaction inputs and outputs to be sorted
@@ -21,7 +21,7 @@ import (
 // WARNING: This function must NOT be called with published transactions since
 // it will mutate the transaction if it's not already sorted.  This can cause
 // issues if you mutate a tx in a block, for example, which would invalidate the
-// block.  It could also cause cached hashes, such as in a btcutil.Tx to become
+// block.  It could also cause cached hashes, such as in a bchutil.Tx to become
 // invalidated.
 //
 // The function should only be used if the caller is creating the transaction or

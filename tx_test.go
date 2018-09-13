@@ -2,7 +2,7 @@
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
-package btcutil_test
+package bchutil_test
 
 import (
 	"bytes"
@@ -10,15 +10,15 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcutil"
+	"github.com/gcash/bchd/chaincfg/chainhash"
+	"github.com/gcash/bchutil"
 	"github.com/davecgh/go-spew/spew"
 )
 
 // TestTx tests the API for Tx.
 func TestTx(t *testing.T) {
 	testTx := Block100000.Transactions[0]
-	tx := btcutil.NewTx(testTx)
+	tx := bchutil.NewTx(testTx)
 
 	// Ensure we get the same data back out.
 	if msgTx := tx.MsgTx(); !reflect.DeepEqual(msgTx, testTx) {
@@ -63,7 +63,7 @@ func TestNewTxFromBytes(t *testing.T) {
 	testTxBytes := testTxBuf.Bytes()
 
 	// Create a new transaction from the serialized bytes.
-	tx, err := btcutil.NewTxFromBytes(testTxBytes)
+	tx, err := bchutil.NewTxFromBytes(testTxBytes)
 	if err != nil {
 		t.Errorf("NewTxFromBytes: %v", err)
 		return
@@ -89,7 +89,7 @@ func TestTxErrors(t *testing.T) {
 
 	// Truncate the transaction byte buffer to force errors.
 	shortBytes := testTxBytes[:4]
-	_, err = btcutil.NewTxFromBytes(shortBytes)
+	_, err = bchutil.NewTxFromBytes(shortBytes)
 	if err != io.EOF {
 		t.Errorf("NewTxFromBytes: did not get expected error - "+
 			"got %v, want %v", err, io.EOF)
