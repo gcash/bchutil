@@ -12,7 +12,7 @@ interface. The functions are only exported while the tests are being run.
 package bchutil
 
 import (
-	"github.com/gcash/bchd/btcec"
+	"github.com/gcash/bchd/bchec"
 	"github.com/gcash/bchutil/base58"
 	"github.com/gcash/bchutil/bech32"
 	"golang.org/x/crypto/ripemd160"
@@ -82,10 +82,10 @@ func TstAddressWitnessScriptHash(version byte, program [32]byte,
 func TstAddressPubKey(serializedPubKey []byte, pubKeyFormat PubKeyFormat,
 	netID byte) *AddressPubKey {
 
-	pubKey, _ := btcec.ParsePubKey(serializedPubKey, btcec.S256())
+	pubKey, _ := bchec.ParsePubKey(serializedPubKey, bchec.S256())
 	return &AddressPubKey{
 		pubKeyFormat: pubKeyFormat,
-		pubKey:       (*btcec.PublicKey)(pubKey),
+		pubKey:       (*bchec.PublicKey)(pubKey),
 		pubKeyHashID: netID,
 	}
 }
