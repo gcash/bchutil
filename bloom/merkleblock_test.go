@@ -60,9 +60,9 @@ func TestMerkleBlock3(t *testing.T) {
 	}
 
 	got := bytes.NewBuffer(nil)
-	err = mBlock.BtcEncode(got, wire.ProtocolVersion, wire.LatestEncoding)
+	err = mBlock.BchEncode(got, wire.ProtocolVersion, wire.LatestEncoding)
 	if err != nil {
-		t.Errorf("TestMerkleBlock3 BtcEncode failed: %v", err)
+		t.Errorf("TestMerkleBlock3 BchEncode failed: %v", err)
 		return
 	}
 
