@@ -18,9 +18,9 @@ func ExampleAmount() {
 	a = bchutil.Amount(1e5)
 	fmt.Println("100,000 Satoshis:", a)
 	// Output:
-	// Zero Satoshi: 0 BTC
-	// 100,000,000 Satoshis: 1 BTC
-	// 100,000 Satoshis: 0.001 BTC
+	// Zero Satoshi: 0 BCH
+	// 100,000,000 Satoshis: 1 BCH
+	// 100,000 Satoshis: 0.001 BCH
 }
 
 func ExampleNewAmount() {
@@ -52,25 +52,25 @@ func ExampleNewAmount() {
 	}
 	fmt.Println(amountNaN) //Output 4
 
-	// Output: 1 BTC
-	// 0.01234567 BTC
-	// 0 BTC
+	// Output: 1 BCH
+	// 0.01234567 BCH
+	// 0 BCH
 	// invalid bitcoin amount
 }
 
 func ExampleAmount_unitConversions() {
 	amount := bchutil.Amount(44433322211100)
 
-	fmt.Println("Satoshi to kBTC:", amount.Format(bchutil.AmountKiloBTC))
-	fmt.Println("Satoshi to BTC:", amount)
-	fmt.Println("Satoshi to MilliBTC:", amount.Format(bchutil.AmountMilliBTC))
-	fmt.Println("Satoshi to MicroBTC:", amount.Format(bchutil.AmountMicroBTC))
+	fmt.Println("Satoshi to kBCH:", amount.Format(bchutil.AmountKiloBCH))
+	fmt.Println("Satoshi to BCH:", amount)
+	fmt.Println("Satoshi to MilliBCH:", amount.Format(bchutil.AmountMilliBCH))
+	fmt.Println("Satoshi to MicroBCH:", amount.Format(bchutil.AmountMicroBCH))
 	fmt.Println("Satoshi to Satoshi:", amount.Format(bchutil.AmountSatoshi))
 
 	// Output:
-	// Satoshi to kBTC: 444.333222111 kBTC
-	// Satoshi to BTC: 444333.222111 BTC
-	// Satoshi to MilliBTC: 444333222.111 mBTC
-	// Satoshi to MicroBTC: 444333222111 μBTC
+	// Satoshi to kBCH: 444.333222111 kBCH
+	// Satoshi to BCH: 444333.222111 BCH
+	// Satoshi to MilliBCH: 444333222.111 mBCH
+	// Satoshi to MicroBCH: 444333222111 μBCH
 	// Satoshi to Satoshi: 44433322211100 Satoshi
 }
