@@ -9,7 +9,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/gcash/bchd/chaincfg"
@@ -37,7 +36,7 @@ func TestAddresses(t *testing.T) {
 				[ripemd160.Size]byte{
 					0xe3, 0x4c, 0xce, 0x70, 0xc8, 0x63, 0x73, 0x27, 0x3e, 0xfc,
 					0xc5, 0x4c, 0xe7, 0xd2, 0xa4, 0x91, 0xbb, 0x4a, 0x0e, 0x84},
-				chaincfg.MainNetParams.PubKeyHashAddrID),
+				chaincfg.MainNetParams.LegacyPubKeyHashAddrID),
 			f: func() (bchutil.Address, error) {
 				pkHash := []byte{
 					0xe3, 0x4c, 0xce, 0x70, 0xc8, 0x63, 0x73, 0x27, 0x3e, 0xfc,
@@ -55,7 +54,7 @@ func TestAddresses(t *testing.T) {
 				[ripemd160.Size]byte{
 					0x0e, 0xf0, 0x30, 0x10, 0x7f, 0xd2, 0x6e, 0x0b, 0x6b, 0xf4,
 					0x05, 0x12, 0xbc, 0xa2, 0xce, 0xb1, 0xdd, 0x80, 0xad, 0xaa},
-				chaincfg.MainNetParams.PubKeyHashAddrID),
+				chaincfg.MainNetParams.LegacyPubKeyHashAddrID),
 			f: func() (bchutil.Address, error) {
 				pkHash := []byte{
 					0x0e, 0xf0, 0x30, 0x10, 0x7f, 0xd2, 0x6e, 0x0b, 0x6b, 0xf4,
@@ -73,7 +72,7 @@ func TestAddresses(t *testing.T) {
 				[ripemd160.Size]byte{
 					0x78, 0xb3, 0x16, 0xa0, 0x86, 0x47, 0xd5, 0xb7, 0x72, 0x83,
 					0xe5, 0x12, 0xd3, 0x60, 0x3f, 0x1f, 0x1c, 0x8d, 0xe6, 0x8f},
-				chaincfg.TestNet3Params.PubKeyHashAddrID),
+				chaincfg.TestNet3Params.LegacyPubKeyHashAddrID),
 			f: func() (bchutil.Address, error) {
 				pkHash := []byte{
 					0x78, 0xb3, 0x16, 0xa0, 0x86, 0x47, 0xd5, 0xb7, 0x72, 0x83,
@@ -117,7 +116,7 @@ func TestAddresses(t *testing.T) {
 				[ripemd160.Size]byte{
 					0xf8, 0x15, 0xb0, 0x36, 0xd9, 0xbb, 0xbc, 0xe5, 0xe9, 0xf2,
 					0xa0, 0x0a, 0xbd, 0x1b, 0xf3, 0xdc, 0x91, 0xe9, 0x55, 0x10},
-				chaincfg.MainNetParams.ScriptHashAddrID),
+				chaincfg.MainNetParams.LegacyScriptHashAddrID),
 			f: func() (bchutil.Address, error) {
 				script := []byte{
 					0x52, 0x41, 0x04, 0x91, 0xbb, 0xa2, 0x51, 0x09, 0x12, 0xa5,
@@ -157,7 +156,7 @@ func TestAddresses(t *testing.T) {
 				[ripemd160.Size]byte{
 					0xe8, 0xc3, 0x00, 0xc8, 0x79, 0x86, 0xef, 0xa8, 0x4c, 0x37,
 					0xc0, 0x51, 0x99, 0x29, 0x01, 0x9e, 0xf8, 0x6e, 0xb5, 0xb4},
-				chaincfg.MainNetParams.ScriptHashAddrID),
+				chaincfg.MainNetParams.LegacyScriptHashAddrID),
 			f: func() (bchutil.Address, error) {
 				hash := []byte{
 					0xe8, 0xc3, 0x00, 0xc8, 0x79, 0x86, 0xef, 0xa8, 0x4c, 0x37,
@@ -176,7 +175,7 @@ func TestAddresses(t *testing.T) {
 				[ripemd160.Size]byte{
 					0xc5, 0x79, 0x34, 0x2c, 0x2c, 0x4c, 0x92, 0x20, 0x20, 0x5e,
 					0x2c, 0xdc, 0x28, 0x56, 0x17, 0x04, 0x0c, 0x92, 0x4a, 0x0a},
-				chaincfg.TestNet3Params.ScriptHashAddrID),
+				chaincfg.TestNet3Params.LegacyScriptHashAddrID),
 			f: func() (bchutil.Address, error) {
 				hash := []byte{
 					0xc5, 0x79, 0x34, 0x2c, 0x2c, 0x4c, 0x92, 0x20, 0x20, 0x5e,
@@ -213,7 +212,7 @@ func TestAddresses(t *testing.T) {
 					0x69, 0xc2, 0xe7, 0x79, 0x01, 0x57, 0x3d, 0x8d, 0x79, 0x03,
 					0xc3, 0xeb, 0xec, 0x3a, 0x95, 0x77, 0x24, 0x89, 0x5d, 0xca,
 					0x52, 0xc6, 0xb4},
-				bchutil.PKFCompressed, chaincfg.MainNetParams.PubKeyHashAddrID),
+				bchutil.PKFCompressed, chaincfg.MainNetParams.LegacyPubKeyHashAddrID),
 			f: func() (bchutil.Address, error) {
 				serializedPubKey := []byte{
 					0x02, 0x19, 0x2d, 0x74, 0xd0, 0xcb, 0x94, 0x34, 0x4c, 0x95,
@@ -235,7 +234,7 @@ func TestAddresses(t *testing.T) {
 					0xe9, 0x86, 0xe8, 0x84, 0x18, 0x5c, 0x61, 0xcf, 0x43, 0xe0,
 					0x01, 0xf9, 0x13, 0x7f, 0x23, 0xc2, 0xc4, 0x09, 0x27, 0x3e,
 					0xb1, 0x6e, 0x65},
-				bchutil.PKFCompressed, chaincfg.MainNetParams.PubKeyHashAddrID),
+				bchutil.PKFCompressed, chaincfg.MainNetParams.LegacyPubKeyHashAddrID),
 			f: func() (bchutil.Address, error) {
 				serializedPubKey := []byte{
 					0x03, 0xb0, 0xbd, 0x63, 0x42, 0x34, 0xab, 0xbb, 0x1b, 0xa1,
@@ -261,7 +260,7 @@ func TestAddresses(t *testing.T) {
 					0xf9, 0x74, 0x44, 0x64, 0xf8, 0x2e, 0x16, 0x0b, 0xfa, 0x9b,
 					0x8b, 0x64, 0xf9, 0xd4, 0xc0, 0x3f, 0x99, 0x9b, 0x86, 0x43,
 					0xf6, 0x56, 0xb4, 0x12, 0xa3},
-				bchutil.PKFUncompressed, chaincfg.MainNetParams.PubKeyHashAddrID),
+				bchutil.PKFUncompressed, chaincfg.MainNetParams.LegacyPubKeyHashAddrID),
 			f: func() (bchutil.Address, error) {
 				serializedPubKey := []byte{
 					0x04, 0x11, 0xdb, 0x93, 0xe1, 0xdc, 0xdb, 0x8a, 0x01, 0x6b,
@@ -290,7 +289,7 @@ func TestAddresses(t *testing.T) {
 					0x96, 0x85, 0x26, 0x62, 0xce, 0x6a, 0x84, 0x7b, 0x19, 0x73,
 					0x76, 0x83, 0x01, 0x60, 0xc6, 0xd2, 0xeb, 0x5e, 0x6a, 0x4c,
 					0x44, 0xd3, 0x3f, 0x45, 0x3e},
-				bchutil.PKFHybrid, chaincfg.MainNetParams.PubKeyHashAddrID),
+				bchutil.PKFHybrid, chaincfg.MainNetParams.LegacyPubKeyHashAddrID),
 			f: func() (bchutil.Address, error) {
 				serializedPubKey := []byte{
 					0x06, 0x19, 0x2d, 0x74, 0xd0, 0xcb, 0x94, 0x34, 0x4c, 0x95,
@@ -319,7 +318,7 @@ func TestAddresses(t *testing.T) {
 					0x8a, 0x7e, 0xf8, 0xbd, 0x3b, 0x3c, 0xfb, 0x1e, 0xdb, 0x71,
 					0x17, 0xab, 0x65, 0x12, 0x9b, 0x8a, 0x2e, 0x68, 0x1f, 0x3c,
 					0x1e, 0x09, 0x08, 0xef, 0x7b},
-				bchutil.PKFHybrid, chaincfg.MainNetParams.PubKeyHashAddrID),
+				bchutil.PKFHybrid, chaincfg.MainNetParams.LegacyPubKeyHashAddrID),
 			f: func() (bchutil.Address, error) {
 				serializedPubKey := []byte{
 					0x07, 0xb0, 0xbd, 0x63, 0x42, 0x34, 0xab, 0xbb, 0x1b, 0xa1,
@@ -344,7 +343,7 @@ func TestAddresses(t *testing.T) {
 					0x69, 0xc2, 0xe7, 0x79, 0x01, 0x57, 0x3d, 0x8d, 0x79, 0x03,
 					0xc3, 0xeb, 0xec, 0x3a, 0x95, 0x77, 0x24, 0x89, 0x5d, 0xca,
 					0x52, 0xc6, 0xb4},
-				bchutil.PKFCompressed, chaincfg.TestNet3Params.PubKeyHashAddrID),
+				bchutil.PKFCompressed, chaincfg.TestNet3Params.LegacyPubKeyHashAddrID),
 			f: func() (bchutil.Address, error) {
 				serializedPubKey := []byte{
 					0x02, 0x19, 0x2d, 0x74, 0xd0, 0xcb, 0x94, 0x34, 0x4c, 0x95,
@@ -366,7 +365,7 @@ func TestAddresses(t *testing.T) {
 					0xe9, 0x86, 0xe8, 0x84, 0x18, 0x5c, 0x61, 0xcf, 0x43, 0xe0,
 					0x01, 0xf9, 0x13, 0x7f, 0x23, 0xc2, 0xc4, 0x09, 0x27, 0x3e,
 					0xb1, 0x6e, 0x65},
-				bchutil.PKFCompressed, chaincfg.TestNet3Params.PubKeyHashAddrID),
+				bchutil.PKFCompressed, chaincfg.TestNet3Params.LegacyPubKeyHashAddrID),
 			f: func() (bchutil.Address, error) {
 				serializedPubKey := []byte{
 					0x03, 0xb0, 0xbd, 0x63, 0x42, 0x34, 0xab, 0xbb, 0x1b, 0xa1,
@@ -392,7 +391,7 @@ func TestAddresses(t *testing.T) {
 					0xf9, 0x74, 0x44, 0x64, 0xf8, 0x2e, 0x16, 0x0b, 0xfa, 0x9b,
 					0x8b, 0x64, 0xf9, 0xd4, 0xc0, 0x3f, 0x99, 0x9b, 0x86, 0x43,
 					0xf6, 0x56, 0xb4, 0x12, 0xa3},
-				bchutil.PKFUncompressed, chaincfg.TestNet3Params.PubKeyHashAddrID),
+				bchutil.PKFUncompressed, chaincfg.TestNet3Params.LegacyPubKeyHashAddrID),
 			f: func() (bchutil.Address, error) {
 				serializedPubKey := []byte{
 					0x04, 0x11, 0xdb, 0x93, 0xe1, 0xdc, 0xdb, 0x8a, 0x01, 0x6b,
@@ -421,7 +420,7 @@ func TestAddresses(t *testing.T) {
 					0x96, 0x85, 0x26, 0x62, 0xce, 0x6a, 0x84, 0x7b, 0x19, 0x73,
 					0x76, 0x83, 0x01, 0x60, 0xc6, 0xd2, 0xeb, 0x5e, 0x6a, 0x4c,
 					0x44, 0xd3, 0x3f, 0x45, 0x3e},
-				bchutil.PKFHybrid, chaincfg.TestNet3Params.PubKeyHashAddrID),
+				bchutil.PKFHybrid, chaincfg.TestNet3Params.LegacyPubKeyHashAddrID),
 			f: func() (bchutil.Address, error) {
 				serializedPubKey := []byte{
 					0x06, 0x19, 0x2d, 0x74, 0xd0, 0xcb, 0x94, 0x34, 0x4c, 0x95,
@@ -450,7 +449,7 @@ func TestAddresses(t *testing.T) {
 					0x8a, 0x7e, 0xf8, 0xbd, 0x3b, 0x3c, 0xfb, 0x1e, 0xdb, 0x71,
 					0x17, 0xab, 0x65, 0x12, 0x9b, 0x8a, 0x2e, 0x68, 0x1f, 0x3c,
 					0x1e, 0x09, 0x08, 0xef, 0x7b},
-				bchutil.PKFHybrid, chaincfg.TestNet3Params.PubKeyHashAddrID),
+				bchutil.PKFHybrid, chaincfg.TestNet3Params.LegacyPubKeyHashAddrID),
 			f: func() (bchutil.Address, error) {
 				serializedPubKey := []byte{
 					0x07, 0xb0, 0xbd, 0x63, 0x42, 0x34, 0xab, 0xbb, 0x1b, 0xa1,
@@ -463,188 +462,6 @@ func TestAddresses(t *testing.T) {
 				return bchutil.NewAddressPubKey(serializedPubKey, &chaincfg.TestNet3Params)
 			},
 			net: &chaincfg.TestNet3Params,
-		},
-		// Segwit address tests.
-		{
-			name:    "segwit mainnet p2wpkh v0",
-			addr:    "BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4",
-			encoded: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
-			valid:   true,
-			result: bchutil.TstAddressWitnessPubKeyHash(
-				0,
-				[20]byte{
-					0x75, 0x1e, 0x76, 0xe8, 0x19, 0x91, 0x96, 0xd4, 0x54, 0x94,
-					0x1c, 0x45, 0xd1, 0xb3, 0xa3, 0x23, 0xf1, 0x43, 0x3b, 0xd6},
-				chaincfg.MainNetParams.Bech32HRPSegwit),
-			f: func() (bchutil.Address, error) {
-				pkHash := []byte{
-					0x75, 0x1e, 0x76, 0xe8, 0x19, 0x91, 0x96, 0xd4, 0x54, 0x94,
-					0x1c, 0x45, 0xd1, 0xb3, 0xa3, 0x23, 0xf1, 0x43, 0x3b, 0xd6}
-				return bchutil.NewAddressWitnessPubKeyHash(pkHash, &chaincfg.MainNetParams)
-			},
-			net: &chaincfg.MainNetParams,
-		},
-		{
-			name:    "segwit mainnet p2wsh v0",
-			addr:    "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3",
-			encoded: "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3",
-			valid:   true,
-			result: bchutil.TstAddressWitnessScriptHash(
-				0,
-				[32]byte{
-					0x18, 0x63, 0x14, 0x3c, 0x14, 0xc5, 0x16, 0x68,
-					0x04, 0xbd, 0x19, 0x20, 0x33, 0x56, 0xda, 0x13,
-					0x6c, 0x98, 0x56, 0x78, 0xcd, 0x4d, 0x27, 0xa1,
-					0xb8, 0xc6, 0x32, 0x96, 0x04, 0x90, 0x32, 0x62},
-				chaincfg.MainNetParams.Bech32HRPSegwit),
-			f: func() (bchutil.Address, error) {
-				scriptHash := []byte{
-					0x18, 0x63, 0x14, 0x3c, 0x14, 0xc5, 0x16, 0x68,
-					0x04, 0xbd, 0x19, 0x20, 0x33, 0x56, 0xda, 0x13,
-					0x6c, 0x98, 0x56, 0x78, 0xcd, 0x4d, 0x27, 0xa1,
-					0xb8, 0xc6, 0x32, 0x96, 0x04, 0x90, 0x32, 0x62}
-				return bchutil.NewAddressWitnessScriptHash(scriptHash, &chaincfg.MainNetParams)
-			},
-			net: &chaincfg.MainNetParams,
-		},
-		{
-			name:    "segwit testnet p2wpkh v0",
-			addr:    "tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx",
-			encoded: "tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx",
-			valid:   true,
-			result: bchutil.TstAddressWitnessPubKeyHash(
-				0,
-				[20]byte{
-					0x75, 0x1e, 0x76, 0xe8, 0x19, 0x91, 0x96, 0xd4, 0x54, 0x94,
-					0x1c, 0x45, 0xd1, 0xb3, 0xa3, 0x23, 0xf1, 0x43, 0x3b, 0xd6},
-				chaincfg.TestNet3Params.Bech32HRPSegwit),
-			f: func() (bchutil.Address, error) {
-				pkHash := []byte{
-					0x75, 0x1e, 0x76, 0xe8, 0x19, 0x91, 0x96, 0xd4, 0x54, 0x94,
-					0x1c, 0x45, 0xd1, 0xb3, 0xa3, 0x23, 0xf1, 0x43, 0x3b, 0xd6}
-				return bchutil.NewAddressWitnessPubKeyHash(pkHash, &chaincfg.TestNet3Params)
-			},
-			net: &chaincfg.TestNet3Params,
-		},
-		{
-			name:    "segwit testnet p2wsh v0",
-			addr:    "tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7",
-			encoded: "tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7",
-			valid:   true,
-			result: bchutil.TstAddressWitnessScriptHash(
-				0,
-				[32]byte{
-					0x18, 0x63, 0x14, 0x3c, 0x14, 0xc5, 0x16, 0x68,
-					0x04, 0xbd, 0x19, 0x20, 0x33, 0x56, 0xda, 0x13,
-					0x6c, 0x98, 0x56, 0x78, 0xcd, 0x4d, 0x27, 0xa1,
-					0xb8, 0xc6, 0x32, 0x96, 0x04, 0x90, 0x32, 0x62},
-				chaincfg.TestNet3Params.Bech32HRPSegwit),
-			f: func() (bchutil.Address, error) {
-				scriptHash := []byte{
-					0x18, 0x63, 0x14, 0x3c, 0x14, 0xc5, 0x16, 0x68,
-					0x04, 0xbd, 0x19, 0x20, 0x33, 0x56, 0xda, 0x13,
-					0x6c, 0x98, 0x56, 0x78, 0xcd, 0x4d, 0x27, 0xa1,
-					0xb8, 0xc6, 0x32, 0x96, 0x04, 0x90, 0x32, 0x62}
-				return bchutil.NewAddressWitnessScriptHash(scriptHash, &chaincfg.TestNet3Params)
-			},
-			net: &chaincfg.TestNet3Params,
-		},
-		{
-			name:    "segwit testnet p2wsh witness v0",
-			addr:    "tb1qqqqqp399et2xygdj5xreqhjjvcmzhxw4aywxecjdzew6hylgvsesrxh6hy",
-			encoded: "tb1qqqqqp399et2xygdj5xreqhjjvcmzhxw4aywxecjdzew6hylgvsesrxh6hy",
-			valid:   true,
-			result: bchutil.TstAddressWitnessScriptHash(
-				0,
-				[32]byte{
-					0x00, 0x00, 0x00, 0xc4, 0xa5, 0xca, 0xd4, 0x62,
-					0x21, 0xb2, 0xa1, 0x87, 0x90, 0x5e, 0x52, 0x66,
-					0x36, 0x2b, 0x99, 0xd5, 0xe9, 0x1c, 0x6c, 0xe2,
-					0x4d, 0x16, 0x5d, 0xab, 0x93, 0xe8, 0x64, 0x33},
-				chaincfg.TestNet3Params.Bech32HRPSegwit),
-			f: func() (bchutil.Address, error) {
-				scriptHash := []byte{
-					0x00, 0x00, 0x00, 0xc4, 0xa5, 0xca, 0xd4, 0x62,
-					0x21, 0xb2, 0xa1, 0x87, 0x90, 0x5e, 0x52, 0x66,
-					0x36, 0x2b, 0x99, 0xd5, 0xe9, 0x1c, 0x6c, 0xe2,
-					0x4d, 0x16, 0x5d, 0xab, 0x93, 0xe8, 0x64, 0x33}
-				return bchutil.NewAddressWitnessScriptHash(scriptHash, &chaincfg.TestNet3Params)
-			},
-			net: &chaincfg.TestNet3Params,
-		},
-		// Unsupported witness versions (version 0 only supported at this point)
-		{
-			name:  "segwit mainnet witness v1",
-			addr:  "bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k7grplx",
-			valid: false,
-			net:   &chaincfg.MainNetParams,
-		},
-		{
-			name:  "segwit mainnet witness v16",
-			addr:  "BC1SW50QA3JX3S",
-			valid: false,
-			net:   &chaincfg.MainNetParams,
-		},
-		{
-			name:  "segwit mainnet witness v2",
-			addr:  "bc1zw508d6qejxtdg4y5r3zarvaryvg6kdaj",
-			valid: false,
-			net:   &chaincfg.MainNetParams,
-		},
-		// Invalid segwit addresses
-		{
-			name:  "segwit invalid hrp",
-			addr:  "tc1qw508d6qejxtdg4y5r3zarvary0c5xw7kg3g4ty",
-			valid: false,
-			net:   &chaincfg.TestNet3Params,
-		},
-		{
-			name:  "segwit invalid checksum",
-			addr:  "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t5",
-			valid: false,
-			net:   &chaincfg.MainNetParams,
-		},
-		{
-			name:  "segwit invalid witness version",
-			addr:  "BC13W508D6QEJXTDG4Y5R3ZARVARY0C5XW7KN40WF2",
-			valid: false,
-			net:   &chaincfg.MainNetParams,
-		},
-		{
-			name:  "segwit invalid program length",
-			addr:  "bc1rw5uspcuh",
-			valid: false,
-			net:   &chaincfg.MainNetParams,
-		},
-		{
-			name:  "segwit invalid program length",
-			addr:  "bc10w508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7kw5rljs90",
-			valid: false,
-			net:   &chaincfg.MainNetParams,
-		},
-		{
-			name:  "segwit invalid program length for witness version 0 (per BIP141)",
-			addr:  "BC1QR508D6QEJXTDG4Y5R3ZARVARYV98GJ9P",
-			valid: false,
-			net:   &chaincfg.MainNetParams,
-		},
-		{
-			name:  "segwit mixed case",
-			addr:  "tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sL5k7",
-			valid: false,
-			net:   &chaincfg.TestNet3Params,
-		},
-		{
-			name:  "segwit zero padding of more than 4 bits",
-			addr:  "tb1pw508d6qejxtdg4y5r3zarqfsj6c3",
-			valid: false,
-			net:   &chaincfg.TestNet3Params,
-		},
-		{
-			name:  "segwit non-zero padding in 8-to-5 conversion",
-			addr:  "tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3pjxtptv",
-			valid: false,
-			net:   &chaincfg.TestNet3Params,
 		},
 	}
 
@@ -661,13 +478,6 @@ func TestAddresses(t *testing.T) {
 			// original.
 			if decodedStringer, ok := decoded.(fmt.Stringer); ok {
 				addr := test.addr
-
-				// For Segwit addresses the string representation
-				// will always be lower case, so in that case we
-				// convert the original to lower case first.
-				if strings.Contains(test.name, "segwit") {
-					addr = strings.ToLower(addr)
-				}
 
 				if addr != decodedStringer.String() {
 					t.Errorf("%v: String on decoded value does not match expected value: %v != %v",
@@ -697,10 +507,6 @@ func TestAddresses(t *testing.T) {
 				// Ignore the error here since the script
 				// address is checked below.
 				saddr, _ = hex.DecodeString(d.String())
-			case *bchutil.AddressWitnessPubKeyHash:
-				saddr = bchutil.TstAddressSegwitSAddr(encoded)
-			case *bchutil.AddressWitnessScriptHash:
-				saddr = bchutil.TstAddressSegwitSAddr(encoded)
 			}
 
 			// Check script address, as well as the Hash160 method for P2PKH and
@@ -722,46 +528,6 @@ func TestAddresses(t *testing.T) {
 				if h := a.Hash160()[:]; !bytes.Equal(saddr, h) {
 					t.Errorf("%v: hashes do not match:\n%x != \n%x",
 						test.name, saddr, h)
-					return
-				}
-
-			case *bchutil.AddressWitnessPubKeyHash:
-				if hrp := a.Hrp(); test.net.Bech32HRPSegwit != hrp {
-					t.Errorf("%v: hrps do not match:\n%x != \n%x",
-						test.name, test.net.Bech32HRPSegwit, hrp)
-					return
-				}
-
-				expVer := test.result.(*bchutil.AddressWitnessPubKeyHash).WitnessVersion()
-				if v := a.WitnessVersion(); v != expVer {
-					t.Errorf("%v: witness versions do not match:\n%x != \n%x",
-						test.name, expVer, v)
-					return
-				}
-
-				if p := a.WitnessProgram(); !bytes.Equal(saddr, p) {
-					t.Errorf("%v: witness programs do not match:\n%x != \n%x",
-						test.name, saddr, p)
-					return
-				}
-
-			case *bchutil.AddressWitnessScriptHash:
-				if hrp := a.Hrp(); test.net.Bech32HRPSegwit != hrp {
-					t.Errorf("%v: hrps do not match:\n%x != \n%x",
-						test.name, test.net.Bech32HRPSegwit, hrp)
-					return
-				}
-
-				expVer := test.result.(*bchutil.AddressWitnessScriptHash).WitnessVersion()
-				if v := a.WitnessVersion(); v != expVer {
-					t.Errorf("%v: witness versions do not match:\n%x != \n%x",
-						test.name, expVer, v)
-					return
-				}
-
-				if p := a.WitnessProgram(); !bytes.Equal(saddr, p) {
-					t.Errorf("%v: witness programs do not match:\n%x != \n%x",
-						test.name, saddr, p)
 					return
 				}
 			}

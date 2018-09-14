@@ -49,20 +49,6 @@ var (
 	testHash = "000000000000000000496d7ff9bd2c96154a8d64260e8b3b411e625712abb14c"
 
 	testAddr = "3Nxwenay9Z8Lc9JBiywExpnEFiLp6Afp8v"
-
-	witness = [][]byte{
-		{0x4c, 0xb1, 0xab, 0x12, 0x57, 0x62, 0x1e, 0x41,
-			0x3b, 0x8b, 0x0e, 0x26, 0x64, 0x8d, 0x4a, 0x15,
-			0x3b, 0x8b, 0x0e, 0x26, 0x64, 0x8d, 0x4a, 0x15,
-			0x3b, 0x8b, 0x0e, 0x26, 0x64, 0x8d, 0x4a, 0x15},
-
-		{0xdd, 0xa3, 0x5a, 0x14, 0x88, 0xfb, 0x97, 0xb6,
-			0xeb, 0x3f, 0xe6, 0xe9, 0xef, 0x2a, 0x25, 0x81,
-			0x4e, 0x39, 0x6f, 0xb5, 0xdc, 0x29, 0x5f, 0xe9,
-			0x94, 0xb9, 0x67, 0x89, 0xb2, 0x1a, 0x03, 0x98,
-			0x94, 0xb9, 0x67, 0x89, 0xb2, 0x1a, 0x03, 0x98,
-			0x94, 0xb9, 0x67, 0x89, 0xb2, 0x1a, 0x03, 0x98},
-	}
 )
 
 // TestUseBlockHash tests using a block hash as a filter key.
@@ -102,11 +88,11 @@ func TestUseBlockHash(t *testing.T) {
 			hex.EncodeToString(key[:]),
 			hex.EncodeToString(testKey[:]))
 	}
-	BuilderTest(b, hash, builder.DefaultP, outPoint, addrBytes, witness, t)
+	BuilderTest(b, hash, builder.DefaultP, outPoint, addrBytes, t)
 
 	// Create a GCSBuilder with a key hash and non-default P and test it.
 	b = builder.WithKeyHashPM(hash, 30, 90)
-	BuilderTest(b, hash, 30, outPoint, addrBytes, witness, t)
+	BuilderTest(b, hash, 30, outPoint, addrBytes, t)
 
 	// Create a GCSBuilder with a random key, set the key from a hash
 	// manually, check that the key is correct, and test it.
@@ -122,7 +108,7 @@ func TestUseBlockHash(t *testing.T) {
 			hex.EncodeToString(key[:]),
 			hex.EncodeToString(testKey[:]))
 	}
-	BuilderTest(b, hash, builder.DefaultP, outPoint, addrBytes, witness, t)
+	BuilderTest(b, hash, builder.DefaultP, outPoint, addrBytes, t)
 
 	// Create a GCSBuilder with a random key and test it.
 	b = builder.WithRandomKey()
@@ -132,7 +118,7 @@ func TestUseBlockHash(t *testing.T) {
 			err.Error())
 	}
 	t.Logf("Random Key 1: %s", hex.EncodeToString(key1[:]))
-	BuilderTest(b, hash, builder.DefaultP, outPoint, addrBytes, witness, t)
+	BuilderTest(b, hash, builder.DefaultP, outPoint, addrBytes, t)
 
 	// Create a GCSBuilder with a random key and non-default P and test it.
 	b = builder.WithRandomKeyPM(30, 90)
@@ -145,7 +131,7 @@ func TestUseBlockHash(t *testing.T) {
 	if key2 == key1 {
 		t.Fatalf("Random keys are the same!")
 	}
-	BuilderTest(b, hash, 30, outPoint, addrBytes, witness, t)
+	BuilderTest(b, hash, 30, outPoint, addrBytes, t)
 
 	// Create a GCSBuilder with a known key and test it.
 	b = builder.WithKey(testKey)
@@ -159,7 +145,7 @@ func TestUseBlockHash(t *testing.T) {
 			hex.EncodeToString(key[:]),
 			hex.EncodeToString(testKey[:]))
 	}
-	BuilderTest(b, hash, builder.DefaultP, outPoint, addrBytes, witness, t)
+	BuilderTest(b, hash, builder.DefaultP, outPoint, addrBytes, t)
 
 	// Create a GCSBuilder with a known key and non-default P and test it.
 	b = builder.WithKeyPM(testKey, 30, 90)
@@ -173,7 +159,7 @@ func TestUseBlockHash(t *testing.T) {
 			hex.EncodeToString(key[:]),
 			hex.EncodeToString(testKey[:]))
 	}
-	BuilderTest(b, hash, 30, outPoint, addrBytes, witness, t)
+	BuilderTest(b, hash, 30, outPoint, addrBytes, t)
 
 	// Create a GCSBuilder with a known key and too-high P and ensure error
 	// works throughout all functions that use it.
@@ -191,8 +177,7 @@ func TestUseBlockHash(t *testing.T) {
 }
 
 func BuilderTest(b *builder.GCSBuilder, hash *chainhash.Hash, p uint8,
-	outPoint wire.OutPoint, addrBytes []byte, witness wire.TxWitness,
-	t *testing.T) {
+	outPoint wire.OutPoint, addrBytes []byte, t *testing.T) {
 
 	key, err := b.Key()
 	if err != nil {
@@ -253,25 +238,10 @@ func BuilderTest(b *builder.GCSBuilder, hash *chainhash.Hash, p uint8,
 		t.Fatal("Filter didn't match when it should have!")
 	}
 
-	// Add a routine witness stack, build a filter, and test that it
-	// matches.
-	b.AddWitness(witness)
-	f, err = b.Build()
-	if err != nil {
-		t.Fatalf("Filter build failed: %s", err.Error())
-	}
-	match, err = f.MatchAny(key, witness)
-	if err != nil {
-		t.Fatalf("Filter match any failed: %s", err)
-	}
-	if !match {
-		t.Fatal("Filter didn't match when it should have!")
-	}
 
 	// Check that adding duplicate items does not increase filter size.
 	originalSize := f.N()
 	b.AddEntry(addrBytes)
-	b.AddWitness(witness)
 	f, err = b.Build()
 	if err != nil {
 		t.Fatalf("Filter build failed: %s", err.Error())

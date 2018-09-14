@@ -187,17 +187,6 @@ func (b *GCSBuilder) AddHash(hash *chainhash.Hash) *GCSBuilder {
 	return b.AddEntry(hash.CloneBytes())
 }
 
-// AddWitness adds each item of the passed filter stack to the filter, and then
-// adds each item as a script.
-func (b *GCSBuilder) AddWitness(witness wire.TxWitness) *GCSBuilder {
-	// Do nothing if the builder's already errored out.
-	if b.err != nil {
-		return b
-	}
-
-	return b.AddEntries(witness)
-}
-
 // Build returns a function which builds a GCS filter with the given parameters
 // and data.
 func (b *GCSBuilder) Build() (*gcs.Filter, error) {
