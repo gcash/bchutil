@@ -9,11 +9,8 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchd/chaincfg/chainhash"
-	"github.com/gcash/bchd/txscript"
 	"github.com/gcash/bchd/wire"
-	"github.com/gcash/bchutil"
 	"github.com/gcash/bchutil/gcs"
 	"github.com/gcash/bchutil/gcs/builder"
 )
@@ -48,7 +45,7 @@ var (
 
 	testHash = "000000000000000000496d7ff9bd2c96154a8d64260e8b3b411e625712abb14c"
 
-	testAddr = "pr54mwe99q7vxh22dth6wmqrstnrec86xcrz9gnhh2"
+	testAddrScript = "a914e95dbb25283cc35d4a6aefa76c0382e63ce0fa3687"
 )
 
 // TestUseBlockHash tests using a block hash as a filter key.
@@ -65,12 +62,7 @@ func TestUseBlockHash(t *testing.T) {
 		Index: 4321,
 	}
 
-	// bchutil.Address
-	addr, err := bchutil.DecodeAddress(testAddr, &chaincfg.MainNetParams)
-	if err != nil {
-		t.Fatalf("Address decode failed: %s", err.Error())
-	}
-	addrBytes, err := txscript.PayToAddrScript(addr)
+	addrBytes, err := hex.DecodeString(testAddrScript)
 	if err != nil {
 		t.Fatalf("Address script build failed: %s", err.Error())
 	}

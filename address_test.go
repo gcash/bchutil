@@ -99,11 +99,11 @@ func TestAddresses(t *testing.T) {
 			valid:   true,
 			result: bchutil.TstAddressScriptHash(
 				[ripemd160.Size]byte{118, 160, 64, 83, 189, 160, 168, 139, 218, 81, 119,
-				184, 106, 21, 195, 178, 159, 85, 152, 115},
+					184, 106, 21, 195, 178, 159, 85, 152, 115},
 				&chaincfg.TestNet3Params),
 			f: func() (bchutil.Address, error) {
 				pkHash := []byte{118, 160, 64, 83, 189, 160, 168, 139, 218, 81, 119,
-				184, 106, 21, 195, 178, 159, 85, 152, 115}
+					184, 106, 21, 195, 178, 159, 85, 152, 115}
 				return bchutil.NewAddressScriptHashFromHash(pkHash, &chaincfg.TestNet3Params)
 			},
 			net: &chaincfg.TestNet3Params,
@@ -115,11 +115,11 @@ func TestAddresses(t *testing.T) {
 			valid:   true,
 			result: bchutil.TstAddressScriptHash(
 				[ripemd160.Size]byte{118, 160, 64, 83, 189, 160, 168, 139, 218, 81, 119,
-				184, 106, 21, 195, 178, 159, 85, 152, 115},
+					184, 106, 21, 195, 178, 159, 85, 152, 115},
 				&chaincfg.RegressionNetParams),
 			f: func() (bchutil.Address, error) {
 				pkHash := []byte{118, 160, 64, 83, 189, 160, 168, 139, 218, 81, 119,
-				184, 106, 21, 195, 178, 159, 85, 152, 115}
+					184, 106, 21, 195, 178, 159, 85, 152, 115}
 				return bchutil.NewAddressScriptHashFromHash(pkHash, &chaincfg.RegressionNetParams)
 			},
 			net: &chaincfg.RegressionNetParams,
@@ -687,7 +687,7 @@ func TestAddresses(t *testing.T) {
 	}
 }
 
-var validCashAddreTestVectors []string = []string {
+var validCashAddreTestVectors []string = []string{
 	"prefix:x64nx6hz",
 	"PREFIX:X64NX6HZ",
 	"p:gpf8m4h7",
@@ -705,7 +705,7 @@ func TestValidCashAddrTestVectors(t *testing.T) {
 	}
 }
 
-var invalidCashAddreTestVectors []string = []string {
+var invalidCashAddreTestVectors []string = []string{
 	"prefix:x32nx6hz",
 	"prEfix:x64nx6hz",
 	"prefix:x64nx6Hz",

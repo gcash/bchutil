@@ -132,8 +132,8 @@ func Example_defaultWalletLayout() {
 	fmt.Println("Account 0 Internal Address 0:", acct0IntAddr)
 
 	// Output:
-	// Account 0 External Address 10: 1HVccubUT8iKTapMJ5AnNA4sLRN27xzQ4F
-	// Account 0 Internal Address 0: 1J5rebbkQaunJTUoNVREDbeB49DqMNFFXk
+	// Account 0 External Address 10: qz6wkeydwnmhsf0w9ac4rwhnx8jmlqsp9yvnt5qaux
+	// Account 0 Internal Address 0: qzak20c4paxssre0a2zvgk8e0r22p06j9s20636fgv
 }
 
 // This example demonstrates the audits use case in BIP0032.
