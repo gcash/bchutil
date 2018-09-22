@@ -1,7 +1,7 @@
 gcs
 ==========
 
-[![Build Status](http://img.shields.io/travis/btcsuite/btcutil.svg)]
+[![Build Status](https://travis-ci.org/gcash/bchutil.svg?branch=master)](https://travis-ci.org/gcash/bchutil)
 (https://travis-ci.org/btcsuite/btcutil) [![ISC License]
 (http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
 [![GoDoc](https://godoc.org/github.com/gcash/bchutil/gcs?status.png)]
