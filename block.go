@@ -32,12 +32,12 @@ func (e OutOfRangeError) Error() string {
 // transactions on their first access so subsequent accesses don't have to
 // repeat the relatively expensive hashing operations.
 type Block struct {
-	msgBlock                 *wire.MsgBlock  // Underlying MsgBlock
-	serializedBlock          []byte          // Serialized bytes for the block
-	blockHash                *chainhash.Hash // Cached block hash
-	blockHeight              int32           // Height in the main block chain
-	transactions             []*Tx           // Transactions
-	txnsGenerated            bool            // ALL wrapped transactions generated
+	msgBlock        *wire.MsgBlock  // Underlying MsgBlock
+	serializedBlock []byte          // Serialized bytes for the block
+	blockHash       *chainhash.Hash // Cached block hash
+	blockHeight     int32           // Height in the main block chain
+	transactions    []*Tx           // Transactions
+	txnsGenerated   bool            // ALL wrapped transactions generated
 }
 
 // MsgBlock returns the underlying wire.MsgBlock for the Block.

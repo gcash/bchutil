@@ -10,6 +10,9 @@ Package bech32 provides a Go implementation of the bech32 format specified in
 
 Test vectors from BIP 173 are added to ensure compatibility with the BIP.
 
+Note this package is NOT use by the CashAddress format as that uses a different bech32 encoding.
+It's left here for the sheer utility of having that package.
+
 ## Installation and Updating
 
 ```bash

@@ -13,8 +13,10 @@ package bchutil
 
 import (
 	"github.com/gcash/bchd/bchec"
+	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchutil/base58"
 	"golang.org/x/crypto/ripemd160"
+	"strings"
 )
 
 // SetBlockBytes sets the internal serialized block byte buffer to the passed
@@ -30,23 +32,45 @@ func TstAppDataDir(goos, appName string, roaming bool) string {
 	return appDataDir(goos, appName, roaming)
 }
 
-// TstAddressPubKeyHash makes an AddressPubKeyHash, setting the
+// TstAddressPubKeyHash makes a AddressPubKeyHash, setting the
 // unexported fields with the parameters hash and netID.
 func TstAddressPubKeyHash(hash [ripemd160.Size]byte,
-	netID byte) *AddressPubKeyHash {
-
+	params *chaincfg.Params) *AddressPubKeyHash {
+	prefix := Prefixes[params]
 	return &AddressPubKeyHash{
+		hash:   hash,
+		prefix: prefix,
+	}
+}
+
+// TstAddressScriptHash makes a AddressScriptHash, setting the
+// unexported fields with the parameters hash and netID.
+func TstAddressScriptHash(hash [ripemd160.Size]byte,
+	params *chaincfg.Params) *AddressScriptHash {
+	prefix := Prefixes[params]
+	return &AddressScriptHash{
+		hash:   hash,
+		prefix: prefix,
+	}
+}
+
+// TstLegacyAddressPubKeyHash makes a LegacyAddressPubKeyHash, setting the
+// unexported fields with the parameters hash and netID.
+func TstLegacyAddressPubKeyHash(hash [ripemd160.Size]byte,
+	netID byte) *LegacyAddressPubKeyHash {
+
+	return &LegacyAddressPubKeyHash{
 		hash:  hash,
 		netID: netID,
 	}
 }
 
-// TstAddressScriptHash makes an AddressScriptHash, setting the
+// TstLegacyAddressScriptHash makes a LegacyAddressScriptHash, setting the
 // unexported fields with the parameters hash and netID.
-func TstAddressScriptHash(hash [ripemd160.Size]byte,
-	netID byte) *AddressScriptHash {
+func TstLegacyAddressScriptHash(hash [ripemd160.Size]byte,
+	netID byte) *LegacyAddressScriptHash {
 
-	return &AddressScriptHash{
+	return &LegacyAddressScriptHash{
 		hash:  hash,
 		netID: netID,
 	}
@@ -65,9 +89,20 @@ func TstAddressPubKey(serializedPubKey []byte, pubKeyFormat PubKeyFormat,
 	}
 }
 
-// TstAddressSAddr returns the expected script address bytes for
-// P2PKH and P2SH bitcoin addresses.
-func TstAddressSAddr(addr string) []byte {
+// TstLegacyAddressSAddr returns the expected script address bytes for
+// P2PKH and P2SH legacy addresses.
+func TstLegacyAddressSAddr(addr string) []byte {
 	decoded := base58.Decode(addr)
 	return decoded[1 : 1+ripemd160.Size]
+}
+
+// TstAddressSAddr returns the expected script address bytes for
+// P2PKH and P2SH cashaddr addresses.
+func TstAddressSAddr(addr string, params *chaincfg.Params) []byte {
+	prefix := Prefixes[params]
+	if !strings.HasPrefix(addr, prefix) {
+		addr = prefix + ":" + addr
+	}
+	decoded, _, _, _ := checkDecodeCashAddress(addr)
+	return decoded[:ripemd160.Size]
 }

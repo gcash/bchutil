@@ -22,9 +22,9 @@ const TxIndexUnknown = -1
 // transaction on its first access so subsequent accesses don't have to repeat
 // the relatively expensive hashing operations.
 type Tx struct {
-	msgTx         *wire.MsgTx     // Underlying MsgTx
-	txHash        *chainhash.Hash // Cached transaction hash
-	txIndex       int             // Position within a block or TxIndexUnknown
+	msgTx   *wire.MsgTx     // Underlying MsgTx
+	txHash  *chainhash.Hash // Cached transaction hash
+	txIndex int             // Position within a block or TxIndexUnknown
 }
 
 // MsgTx returns the underlying wire.MsgTx for the transaction.
