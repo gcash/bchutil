@@ -620,20 +620,25 @@ func checkDecodeCashAddress(input string) (result []byte, prefix string, t Addre
 	return data[1:21], prefix, t, nil
 }
 
+// AddressType represents the type of address and is used
+// when encoding the cashaddr.
 type AddressType int
 
 const (
+	// AddrTypePayToPubKeyHash is the numeric identifier for
+	// a cashaddr PayToPubkeyHash address
 	AddrTypePayToPubKeyHash AddressType = 0
+
+	// AddrTypePayToScriptHash is the numeric identifier for
+	// a cashaddr PayToPubkeyHash address
 	AddrTypePayToScriptHash AddressType = 1
 )
 
-type data []byte
+// Charset is the base32 character set for the cashaddr.
+const Charset string = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 
-// The cashaddr character set for encoding.
-const CHARSET string = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
-
-// The cashaddr character set for decoding.
-var CHARSET_REV = [128]int8{
+// CharsetRev is the cashaddr character set for decoding.
+var CharsetRev = [128]int8{
 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 15, -1, 10, 17, 21, 20, 26, 30, 7,
@@ -646,7 +651,7 @@ var CHARSET_REV = [128]int8{
 // This function will compute what 8 5-bit values to XOR into the last 8 input
 // values, in order to make the checksum 0. These 8 values are packed together
 // in a single 40-bit integer. The higher bits correspond to earlier values.
-func polyMod(v data) uint64 {
+func polyMod(v []byte) uint64 {
 	/**
 	 * The input is interpreted as a list of coefficients of a polynomial over F
 	 * = GF(32), with an implicit 1 in front. If the input is [v0,v1,v2,v3,v4],
@@ -753,7 +758,7 @@ func polyMod(v data) uint64 {
 	return c ^ 1
 }
 
-func cat(x, y data) data {
+func cat(x, y []byte) []byte {
 	return append(x, y...)
 }
 
@@ -762,27 +767,27 @@ func lowerCase(c byte) byte {
 	return c | 0x20
 }
 
-func expandPrefix(prefix string) data {
-	ret := make(data, len(prefix)+1)
+func expandPrefix(prefix string) []byte {
+	ret := make([]byte, len(prefix)+1)
 	for i := 0; i < len(prefix); i++ {
-		ret[i] = byte(prefix[i]) & 0x1f
+		ret[i] = prefix[i] & 0x1f
 	}
 
 	ret[len(prefix)] = 0
 	return ret
 }
 
-func verifyChecksum(prefix string, payload data) bool {
+func verifyChecksum(prefix string, payload []byte) bool {
 	return polyMod(cat(expandPrefix(prefix), payload)) == 0
 }
 
-func createChecksum(prefix string, payload data) data {
+func createChecksum(prefix string, payload []byte) []byte {
 	enc := cat(expandPrefix(prefix), payload)
 	// Append 8 zeroes.
-	enc = cat(enc, data{0, 0, 0, 0, 0, 0, 0, 0})
+	enc = cat(enc, []byte{0, 0, 0, 0, 0, 0, 0, 0})
 	// Determine what to XOR into those 8 zeroes.
 	mod := polyMod(enc)
-	ret := make(data, 8)
+	ret := make([]byte, 8)
 	for i := 0; i < 8; i++ {
 		// Convert the 5-bit groups in mod to checksum values.
 		ret[i] = byte((mod >> uint(5*(7-i))) & 0x1f)
@@ -790,24 +795,26 @@ func createChecksum(prefix string, payload data) data {
 	return ret
 }
 
-func encode(prefix string, payload data) string {
+func encode(prefix string, payload []byte) string {
 	checksum := createChecksum(prefix, payload)
 	combined := cat(payload, checksum)
 	ret := ""
 
 	for _, c := range combined {
-		ret += string(CHARSET[c])
+		ret += string(Charset[c])
 	}
 
 	return ret
 }
 
-func DecodeCashAddress(str string) (string, data, error) {
+// DecodeCashAddress decodes a cashaddr string and returns the
+// prefix and data element.
+func DecodeCashAddress(str string) (string, []byte, error) {
 	// Go over the string and do some sanity checks.
 	lower, upper := false, false
 	prefixSize := 0
 	for i := 0; i < len(str); i++ {
-		c := byte(str[i])
+		c := str[i]
 		if c >= 'a' && c <= 'z' {
 			lower = true
 			continue
@@ -821,7 +828,7 @@ func DecodeCashAddress(str string) (string, data, error) {
 		if c >= '0' && c <= '9' {
 			// We cannot have numbers in the prefix.
 			if prefixSize == 0 {
-				return "", data{}, errors.New("addresses cannot have numbers in the prefix")
+				return "", nil, errors.New("addresses cannot have numbers in the prefix")
 			}
 
 			continue
@@ -831,7 +838,7 @@ func DecodeCashAddress(str string) (string, data, error) {
 			// The separator must not be the first character, and there must not
 			// be 2 separators.
 			if i == 0 || prefixSize != 0 {
-				return "", data{}, errors.New("the separator must not be the first character")
+				return "", nil, errors.New("the separator must not be the first character")
 			}
 
 			prefixSize = i
@@ -839,17 +846,17 @@ func DecodeCashAddress(str string) (string, data, error) {
 		}
 
 		// We have an unexpected character.
-		return "", data{}, errors.New("unexpected character")
+		return "", nil, errors.New("unexpected character")
 	}
 
 	// We must have a prefix and a data part and we can't have both uppercase
 	// and lowercase.
 	if prefixSize == 0 {
-		return "", data{}, errors.New("address must have a prefix")
+		return "", nil, errors.New("address must have a prefix")
 	}
 
 	if upper && lower {
-		return "", data{}, errors.New("addresses cannot use both upper and lower case characters")
+		return "", nil, errors.New("addresses cannot use both upper and lower case characters")
 	}
 
 	// Get the prefix.
@@ -860,20 +867,20 @@ func DecodeCashAddress(str string) (string, data, error) {
 
 	// Decode values.
 	valuesSize := len(str) - 1 - prefixSize
-	values := make(data, valuesSize)
+	values := make([]byte, valuesSize)
 	for i := 0; i < valuesSize; i++ {
-		c := byte(str[i+prefixSize+1])
+		c := str[i+prefixSize+1]
 		// We have an invalid char in there.
-		if c > 127 || CHARSET_REV[c] == -1 {
-			return "", data{}, errors.New("invalid character")
+		if c > 127 || CharsetRev[c] == -1 {
+			return "", nil, errors.New("invalid character")
 		}
 
-		values[i] = byte(CHARSET_REV[c])
+		values[i] = byte(CharsetRev[c])
 	}
 
 	// Verify the checksum.
 	if !verifyChecksum(prefix, values) {
-		return "", data{}, ErrChecksumMismatch
+		return "", nil, ErrChecksumMismatch
 	}
 
 	return prefix, values[:len(values)-8], nil
@@ -883,7 +890,7 @@ func DecodeCashAddress(str string) (string, data, error) {
 // https://github.com/sipa/bech32/blob/master/ref/go/src/bech32/bech32.go
 // Copyright (c) 2017 Takatoshi Nakagawa
 // MIT License
-func convertBits(data data, fromBits uint, tobits uint, pad bool) (data, error) {
+func convertBits(data []byte, fromBits uint, tobits uint, pad bool) ([]byte, error) {
 	// General power-of-2 base conversion.
 	var uintArr []uint
 	for _, i := range data {
@@ -916,24 +923,22 @@ func convertBits(data data, fromBits uint, tobits uint, pad bool) (data, error) 
 	return dataArr, nil
 }
 
-func packAddressData(addrType AddressType, addrHash data) (data, error) {
+func packAddressData(addrType AddressType, addrHash []byte) ([]byte, error) {
 	// Pack addr data with version byte.
 	if addrType != AddrTypePayToPubKeyHash && addrType != AddrTypePayToScriptHash {
-		return data{}, errors.New("invalid AddressType")
+		return nil, errors.New("invalid AddressType")
 	}
 	versionByte := uint(addrType) << 3
 	encodedSize := (uint(len(addrHash)) - 20) / 4
 	if (len(addrHash)-20)%4 != 0 {
-		return data{}, errors.New("invalid address hash size")
+		return nil, errors.New("invalid address hash size")
 	}
 	if encodedSize < 0 || encodedSize > 8 {
-		return data{}, errors.New("encoded size out of valid range")
+		return nil, errors.New("encoded size out of valid range")
 	}
 	versionByte |= encodedSize
-	var addrHashUint data
-	for _, e := range addrHash {
-		addrHashUint = append(addrHashUint, byte(e))
-	}
+	var addrHashUint []byte
+	addrHashUint = append(addrHashUint, addrHash...)
 	data := append([]byte{byte(versionByte)}, addrHashUint...)
 	packedData, err := convertBits(data, 8, 5, true)
 	if err != nil {
