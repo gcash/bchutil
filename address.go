@@ -45,6 +45,7 @@ func init() {
 	Prefixes[&chaincfg.MainNetParams] = "bitcoincash"
 	Prefixes[&chaincfg.TestNet3Params] = "bchtest"
 	Prefixes[&chaincfg.RegressionNetParams] = "bchreg"
+	Prefixes[&chaincfg.SimNetParams] = "bchsim"
 }
 
 // Address is an interface type for any type of destination a transaction
@@ -585,6 +586,14 @@ func paramsFromNetID(netID byte) *chaincfg.Params {
 		return &chaincfg.TestNet3Params
 	case chaincfg.RegressionNetParams.LegacyPubKeyHashAddrID:
 		return &chaincfg.RegressionNetParams
+	case chaincfg.SimNetParams.LegacyPubKeyHashAddrID:
+		return &chaincfg.SimNetParams
+	case chaincfg.TestNet3Params.LegacyScriptHashAddrID:
+		return &chaincfg.TestNet3Params
+	case chaincfg.RegressionNetParams.LegacyScriptHashAddrID:
+		return &chaincfg.RegressionNetParams
+	case chaincfg.SimNetParams.LegacyScriptHashAddrID:
+		return &chaincfg.SimNetParams
 	default:
 		return &chaincfg.MainNetParams
 	}
