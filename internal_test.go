@@ -36,10 +36,9 @@ func TstAppDataDir(goos, appName string, roaming bool) string {
 // unexported fields with the parameters hash and netID.
 func TstAddressPubKeyHash(hash [ripemd160.Size]byte,
 	params *chaincfg.Params) *AddressPubKeyHash {
-	prefix := Prefixes[params]
 	return &AddressPubKeyHash{
 		hash:   hash,
-		prefix: prefix,
+		prefix: params.CashAddressPrefix,
 	}
 }
 
@@ -47,10 +46,9 @@ func TstAddressPubKeyHash(hash [ripemd160.Size]byte,
 // unexported fields with the parameters hash and netID.
 func TstAddressScriptHash(hash [ripemd160.Size]byte,
 	params *chaincfg.Params) *AddressScriptHash {
-	prefix := Prefixes[params]
 	return &AddressScriptHash{
 		hash:   hash,
-		prefix: prefix,
+		prefix: params.CashAddressPrefix,
 	}
 }
 
@@ -99,7 +97,7 @@ func TstLegacyAddressSAddr(addr string) []byte {
 // TstAddressSAddr returns the expected script address bytes for
 // P2PKH and P2SH cashaddr addresses.
 func TstAddressSAddr(addr string, params *chaincfg.Params) []byte {
-	prefix := Prefixes[params]
+	prefix := params.CashAddressPrefix
 	if !strings.HasPrefix(addr, prefix) {
 		addr = prefix + ":" + addr
 	}

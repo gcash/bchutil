@@ -35,18 +35,7 @@ var (
 
 	// ErrInvalidFormat describes an error where decoding failed due to invalid version
 	ErrInvalidFormat = errors.New("invalid format: version and/or checksum bytes missing")
-
-	// Prefixes maps the network params to a cashaddr prefix
-	Prefixes map[*chaincfg.Params]string
 )
-
-func init() {
-	Prefixes = make(map[*chaincfg.Params]string)
-	Prefixes[&chaincfg.MainNetParams] = "bitcoincash"
-	Prefixes[&chaincfg.TestNet3Params] = "bchtest"
-	Prefixes[&chaincfg.RegressionNetParams] = "bchreg"
-	Prefixes[&chaincfg.SimNetParams] = "bchsim"
-}
 
 // Address is an interface type for any type of destination a transaction
 // output may spend to.  This includes pay-to-pubkey (P2PK), pay-to-pubkey-hash
@@ -85,10 +74,7 @@ type Address interface {
 // When the address does not encode the network, such as in the case of a raw
 // public key, the address will be associated with the passed defaultNet.
 func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
-	pre, ok := Prefixes[defaultNet]
-	if !ok {
-		return nil, errors.New("unknown network parameters")
-	}
+	pre := defaultNet.CashAddressPrefix
 	if len(addr) < len(pre)+2 {
 		return nil, errors.New("invalid length address")
 	}
@@ -199,12 +185,7 @@ func newAddressPubKeyHash(pkHash []byte, net *chaincfg.Params) (*AddressPubKeyHa
 		return nil, errors.New("pkHash must be 20 bytes")
 	}
 
-	prefix, ok := Prefixes[net]
-	if !ok {
-		return nil, errors.New("unknown network parameters")
-	}
-
-	addr := &AddressPubKeyHash{prefix: prefix}
+	addr := &AddressPubKeyHash{prefix: net.CashAddressPrefix}
 	copy(addr.hash[:], pkHash)
 	return addr, nil
 }
@@ -224,11 +205,7 @@ func (a *AddressPubKeyHash) ScriptAddress() []byte {
 // IsForNet returns whether or not the pay-to-pubkey-hash address is associated
 // with the passed bitcoin cash network.
 func (a *AddressPubKeyHash) IsForNet(net *chaincfg.Params) bool {
-	checkPre, ok := Prefixes[net]
-	if !ok {
-		return false
-	}
-	return a.prefix == checkPre
+	return a.prefix == net.CashAddressPrefix
 }
 
 // String returns a human-readable string for the pay-to-pubkey-hash address.
@@ -275,12 +252,7 @@ func newAddressScriptHashFromHash(scriptHash []byte, net *chaincfg.Params) (*Add
 		return nil, errors.New("scriptHash must be 20 bytes")
 	}
 
-	pre, ok := Prefixes[net]
-	if !ok {
-		return nil, errors.New("unknown network parameters")
-	}
-
-	addr := &AddressScriptHash{prefix: pre}
+	addr := &AddressScriptHash{prefix: net.CashAddressPrefix}
 	copy(addr.hash[:], scriptHash)
 	return addr, nil
 }
@@ -300,11 +272,7 @@ func (a *AddressScriptHash) ScriptAddress() []byte {
 // IsForNet returns whether or not the pay-to-script-hash address is associated
 // with the passed bitcoin cash network.
 func (a *AddressScriptHash) IsForNet(net *chaincfg.Params) bool {
-	pre, ok := Prefixes[net]
-	if !ok {
-		return false
-	}
-	return pre == a.prefix
+	return net.CashAddressPrefix == a.prefix
 }
 
 // String returns a human-readable string for the pay-to-script-hash address.
@@ -569,8 +537,7 @@ func (a *AddressPubKey) SetFormat(pkFormat PubKeyFormat) {
 // are pay-to-pubkey-hash constructed from the uncompressed public key.
 func (a *AddressPubKey) AddressPubKeyHash() *AddressPubKeyHash {
 	params := paramsFromNetID(a.pubKeyHashID)
-	prefix := Prefixes[params]
-	addr := &AddressPubKeyHash{prefix: prefix}
+	addr := &AddressPubKeyHash{prefix: params.CashAddressPrefix}
 	copy(addr.hash[:], Hash160(a.serialize()))
 	return addr
 }
