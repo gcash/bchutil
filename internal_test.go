@@ -52,6 +52,17 @@ func TstAddressScriptHash(hash [ripemd160.Size]byte,
 	}
 }
 
+// TstAddressScriptHash makes a AddressScriptHash, setting the
+// unexported fields with the parameters hash and netID.
+func TstAddressPaymentChannel(peerID [32]byte, addrID [16]byte,
+	params *chaincfg.Params) *AddressPaymentChannel {
+	return &AddressPaymentChannel{
+		PeerID:    peerID,
+		AddressID: addrID,
+		prefix:    params.CashAddressPrefix,
+	}
+}
+
 // TstLegacyAddressPubKeyHash makes a LegacyAddressPubKeyHash, setting the
 // unexported fields with the parameters hash and netID.
 func TstLegacyAddressPubKeyHash(hash [ripemd160.Size]byte,
@@ -102,5 +113,5 @@ func TstAddressSAddr(addr string, params *chaincfg.Params) []byte {
 		addr = prefix + ":" + addr
 	}
 	decoded, _, _, _ := checkDecodeCashAddress(addr)
-	return decoded[:ripemd160.Size]
+	return decoded
 }

@@ -77,7 +77,7 @@ func TestAddresses(t *testing.T) {
 		},
 		// Positive cashaddr P2SH tests.
 		{
-			name:    "cashaddr mainnet p2p2sh",
+			name:    "cashaddr mainnet p2sh",
 			addr:    "ppm2qsznhks23z7629mms6s4cwef74vcwvn0h829pq",
 			encoded: "ppm2qsznhks23z7629mms6s4cwef74vcwvn0h829pq",
 			valid:   true,
@@ -93,7 +93,7 @@ func TestAddresses(t *testing.T) {
 			net: &chaincfg.MainNetParams,
 		},
 		{
-			name:    "cashaddr testnet p2p2sh",
+			name:    "cashaddr testnet p2sh",
 			addr:    "ppm2qsznhks23z7629mms6s4cwef74vcwvhanqgjxu",
 			encoded: "ppm2qsznhks23z7629mms6s4cwef74vcwvhanqgjxu",
 			valid:   true,
@@ -109,7 +109,7 @@ func TestAddresses(t *testing.T) {
 			net: &chaincfg.TestNet3Params,
 		},
 		{
-			name:    "cashaddr regtest p2p2sh",
+			name:    "cashaddr regtest p2sh",
 			addr:    "ppm2qsznhks23z7629mms6s4cwef74vcwvdp9ptp96",
 			encoded: "ppm2qsznhks23z7629mms6s4cwef74vcwvdp9ptp96",
 			valid:   true,
@@ -123,6 +123,29 @@ func TestAddresses(t *testing.T) {
 				return bchutil.NewAddressScriptHashFromHash(pkHash, &chaincfg.RegressionNetParams)
 			},
 			net: &chaincfg.RegressionNetParams,
+		},
+		// Positive cashaddr PaymentChannel tests.
+		{
+			name:    "cashaddr mainnet paymentchannel",
+			addr:    "za52fe7cfjlhlnasergd2h278hee2k7qylqd89cxrkhr0fh8xlr4jsl9nk8lmnes99gxrsw09t5nlccdnesmqud",
+			encoded: "za52fe7cfjlhlnasergd2h278hee2k7qylqd89cxrkhr0fh8xlr4jsl9nk8lmnes99gxrsw09t5nlccdnesmqud",
+			valid:   true,
+			result: bchutil.TstAddressPaymentChannel(
+				[32]byte{0x95, 0x5b, 0xc0, 0x27, 0xc0, 0xd3, 0x97, 0x06, 0x1d,
+					0xae, 0x37, 0xa6, 0xe7, 0x37, 0xc7, 0x59, 0x43, 0xe5, 0x9d, 0x8f, 0xfd,
+					0xcf, 0x30, 0x29, 0x50, 0x61, 0xc1, 0xcf, 0x2a, 0xe9, 0x3f, 0xe3},
+				[16]byte{0x68, 0xa4, 0xe7, 0xd8, 0x4c, 0xbf, 0x7f, 0xcf, 0xb0,
+					0xc8, 0xd0, 0xd5, 0x5d, 0x5e, 0x3d, 0xf3},
+				&chaincfg.MainNetParams),
+			f: func() (bchutil.Address, error) {
+				peerID := []byte{0x95, 0x5b, 0xc0, 0x27, 0xc0, 0xd3, 0x97, 0x06, 0x1d,
+					0xae, 0x37, 0xa6, 0xe7, 0x37, 0xc7, 0x59, 0x43, 0xe5, 0x9d, 0x8f, 0xfd,
+					0xcf, 0x30, 0x29, 0x50, 0x61, 0xc1, 0xcf, 0x2a, 0xe9, 0x3f, 0xe3}
+				addrID := []byte{0x68, 0xa4, 0xe7, 0xd8, 0x4c, 0xbf, 0x7f, 0xcf, 0xb0,
+					0xc8, 0xd0, 0xd5, 0x5d, 0x5e, 0x3d, 0xf3}
+				return bchutil.NewAddressPaymentChannel(peerID, addrID, &chaincfg.MainNetParams)
+			},
+			net: &chaincfg.MainNetParams,
 		},
 		// Positive legacy P2PKH tests.
 		{
@@ -606,6 +629,9 @@ func TestAddresses(t *testing.T) {
 
 			case *bchutil.LegacyAddressScriptHash:
 				saddr = bchutil.TstLegacyAddressSAddr(encoded)
+
+			case *bchutil.AddressPaymentChannel:
+				saddr = bchutil.TstAddressSAddr(encoded, test.net)
 
 			case *bchutil.AddressPubKey:
 				// Ignore the error here since the script

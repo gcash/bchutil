@@ -7,7 +7,6 @@ package bchutil
 import (
 	"encoding/hex"
 	"errors"
-
 	"github.com/gcash/bchd/bchec"
 	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchutil/base58"
@@ -98,6 +97,8 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 			default:
 				return nil, ErrUnknownAddressType
 			}
+		case PaymentChannelDataLen:
+			return newAddressPaymentChannel(decoded[16:], decoded[:16], defaultNet)
 		default:
 			return nil, errors.New("decoded address is of unknown size")
 		}
@@ -137,7 +138,6 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 		default:
 			return nil, ErrUnknownAddressType
 		}
-
 	default:
 		return nil, errors.New("decoded address is of unknown size")
 	}
@@ -158,7 +158,7 @@ func encodeLegacyAddress(hash160 []byte, netID byte) string {
 // in both pay-to-pubkey-hash (P2PKH) and pay-to-script-hash (P2SH) address
 // encoding.
 func encodeCashAddress(hash160 []byte, prefix string, t AddressType) string {
-	return checkEncodeCashAddress(hash160[:ripemd160.Size], prefix, t)
+	return checkEncodeCashAddress(hash160, prefix, t)
 }
 
 // AddressPubKeyHash is an Address for a pay-to-pubkey-hash (P2PKH)
@@ -287,6 +287,69 @@ func (a *AddressScriptHash) String() string {
 // keys).
 func (a *AddressScriptHash) Hash160() *[ripemd160.Size]byte {
 	return &a.hash
+}
+
+// PaymentChannelDataLen is the the expected size of the serialized payload for a
+// paymentchannel address.
+const PaymentChannelDataLen = 48
+
+// AddressPaymentChannel is a a payment channel address. It contains the information
+// needed for a user to open a payment channel with another user.
+type AddressPaymentChannel struct {
+	PeerID    [32]byte
+	AddressID [16]byte
+	prefix    string
+}
+
+// NewAddressPaymentChannel returns a new AddressPaymentChannel.  peerID must be 32 bytes
+// while addressID must be 16 bytes.
+func NewAddressPaymentChannel(peerID, addressID []byte, net *chaincfg.Params) (*AddressPaymentChannel, error) {
+	return newAddressPaymentChannel(peerID, addressID, net)
+}
+
+// newAddressPaymentChannel is the internal API to create a payment chanel address
+// with a known leading identifier byte for a network, rather than looking
+// it up through its parameters.  This is useful when creating a new address
+// structure from a string encoding where the identifer byte is already
+// known.
+func newAddressPaymentChannel(peerID, addressID []byte, net *chaincfg.Params) (*AddressPaymentChannel, error) {
+	// Check for a valid pubkey hash length.
+	if len(peerID) != 32 {
+		return nil, errors.New("peerID must be 32 bytes")
+	}
+
+	if len(addressID) != 16 {
+		return nil, errors.New("addressID must be 16 bytes")
+	}
+
+	addr := &AddressPaymentChannel{prefix: net.CashAddressPrefix}
+	copy(addr.PeerID[:], peerID)
+	copy(addr.AddressID[:], addressID)
+	return addr, nil
+}
+
+// EncodeAddress returns the string encoding of a paymentchannel
+// address.  Part of the Address interface.
+func (a *AddressPaymentChannel) EncodeAddress() string {
+	return encodeCashAddress(append(a.AddressID[:], a.PeerID[:]...), a.prefix, AddrTypePaymentChannel)
+}
+
+// ScriptAddress returns the address data and isn't intended to go in an output script.
+func (a *AddressPaymentChannel) ScriptAddress() []byte {
+	return append(a.AddressID[:], a.PeerID[:]...)
+}
+
+// IsForNet returns whether or not the pay-to-pubkey-hash address is associated
+// with the passed bitcoin cash network.
+func (a *AddressPaymentChannel) IsForNet(net *chaincfg.Params) bool {
+	return a.prefix == net.CashAddressPrefix
+}
+
+// String returns a human-readable string for the pay-to-pubkey-hash address.
+// This is equivalent to calling EncodeAddress, but is provided so the type can
+// be used as a fmt.Stringer.
+func (a *AddressPaymentChannel) String() string {
+	return a.EncodeAddress()
 }
 
 // LegacyAddressPubKeyHash is an Address for a pay-to-pubkey-hash (P2PKH)
@@ -584,7 +647,7 @@ func checkDecodeCashAddress(input string) (result []byte, prefix string, t Addre
 	if err != nil {
 		return data, prefix, AddrTypePayToPubKeyHash, err
 	}
-	if len(data) != 21 {
+	if len(data) != 21 && len(data) != 49 {
 		return data, prefix, AddrTypePayToPubKeyHash, errors.New("incorrect data length")
 	}
 	switch data[0] {
@@ -592,8 +655,10 @@ func checkDecodeCashAddress(input string) (result []byte, prefix string, t Addre
 		t = AddrTypePayToPubKeyHash
 	case 0x08:
 		t = AddrTypePayToScriptHash
+	case 0x17:
+		t = AddrTypePaymentChannel
 	}
-	return data[1:21], prefix, t, nil
+	return data[1:], prefix, t, nil
 }
 
 // AddressType represents the type of address and is used
@@ -608,6 +673,10 @@ const (
 	// AddrTypePayToScriptHash is the numeric identifier for
 	// a cashaddr PayToPubkeyHash address
 	AddrTypePayToScriptHash AddressType = 1
+
+	// AddrTypePaymentChannel is the numeric identifier for
+	// a cashaddr PaymentChannel address
+	AddrTypePaymentChannel AddressType = 2
 )
 
 // Charset is the base32 character set for the cashaddr.
@@ -901,7 +970,7 @@ func convertBits(data []byte, fromBits uint, tobits uint, pad bool) ([]byte, err
 
 func packAddressData(addrType AddressType, addrHash []byte) ([]byte, error) {
 	// Pack addr data with version byte.
-	if addrType != AddrTypePayToPubKeyHash && addrType != AddrTypePayToScriptHash {
+	if addrType != AddrTypePayToPubKeyHash && addrType != AddrTypePayToScriptHash && addrType != AddrTypePaymentChannel {
 		return nil, errors.New("invalid AddressType")
 	}
 	versionByte := uint(addrType) << 3
