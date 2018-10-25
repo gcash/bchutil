@@ -110,8 +110,9 @@ func NewTLSCertPair(organization string, validUntil time.Time, extraHosts []stri
 
 		KeyUsage: x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature |
 			x509.KeyUsageCertSign,
-		IsCA: true, // so can sign self.
 		BasicConstraintsValid: true,
+
+		IsCA: true,
 
 		DNSNames:    dnsNames,
 		IPAddresses: ipAddresses,
