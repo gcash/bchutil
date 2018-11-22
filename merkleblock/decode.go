@@ -11,6 +11,20 @@ import (
 	"github.com/gcash/bchd/wire"
 )
 
+// MaxTxnCount defines the maximum number of transactions we will process before
+// aborting merkle tree traversal operations.
+//
+// bitcoin core uses formula of max blocksize divided by segwit transaction
+// size (240 bytes) to calculate max number of transactions that could fit
+// in a block which at this time is 4000000/240=16666
+//
+// bitcoin ABC has removed this check and has been marked "FIXME".
+//
+// we have opted to use a similar calculation to core based on smallest
+// possible transaction size spending OP_TRUE at 61 bytes with max block
+// size variable
+const MaxTxnCount = uint32(wire.MaxBlockPayload / 61)
+
 type PartialBlock struct {
 	numTx       uint32
 	finalHashes []*chainhash.Hash
@@ -77,17 +91,7 @@ func (m *PartialBlock) ExtractMatches() *chainhash.Hash {
 	}
 
 	// check for excessively high number of transactions
-	//
-	// bitcoin core uses formula of max blocksize divided by segwit transaction
-	// size (240 bytes) to calculate max number of transactions that could fit
-	// in a block which at this time is 4000000/240=16666
-	//
-	// bitcoin ABC has removed this check and has been marked "FIXME".
-	//
-	// we have opted to use a similar calculation to core based on smallest
-	// possible transaction size spending OP_TRUE at 61 bytes with max block
-	// size variable
-	if m.numTx > uint32(wire.MaxBlockPayload/61) {
+	if m.numTx > MaxTxnCount {
 		return nil
 	}
 
