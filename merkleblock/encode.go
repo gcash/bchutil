@@ -79,9 +79,9 @@ func (m *MerkleBlock) traverseAndBuild(height, pos uint32) {
 	}
 }
 
-// txInSet checks if a given transaction is included in the given list of
+// TxInSet checks if a given transaction is included in the given list of
 // transactions
-func txInSet(tx *chainhash.Hash, set []*chainhash.Hash) bool {
+func TxInSet(tx *chainhash.Hash, set []*chainhash.Hash) bool {
 	for _, next := range set {
 		if *tx == *next {
 			return true
@@ -131,7 +131,7 @@ func NewMerkleBlockWithTxnSet(block *bchutil.Block, txnSet []*chainhash.Hash) (*
 	// transactions
 	var matchedIndices []uint32
 	for txIndex, tx := range block.Transactions() {
-		if txInSet(tx.Hash(), txnSet) {
+		if TxInSet(tx.Hash(), txnSet) {
 			mBlock.matchedBits = append(mBlock.matchedBits, 0x01)
 			matchedIndices = append(matchedIndices, uint32(txIndex))
 		} else {
