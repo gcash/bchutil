@@ -13,7 +13,7 @@ import (
 	"github.com/gcash/bchutil/bloom"
 )
 
-// merkleBlock is used to house intermediate information needed to generate a
+// MerkleBlock is used to house intermediate information needed to generate a
 // wire.MsgMerkleBlock
 type MerkleBlock struct {
 	numTx       uint32

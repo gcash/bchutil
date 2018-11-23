@@ -85,8 +85,7 @@ func TestNewMerkleBlockFromMsg(t *testing.T) {
 				return
 			}
 
-			var msg wire.MsgMerkleBlock
-			msg = wire.MsgMerkleBlock{}
+			msg := wire.MsgMerkleBlock{}
 
 			rbuf := bytes.NewReader(dec)
 
@@ -103,7 +102,7 @@ func TestNewMerkleBlockFromMsg(t *testing.T) {
 			merkleRoot := mBlock.ExtractMatches()
 
 			// check merkle root matches
-			if merkleRoot.IsEqual(tt.merkleRoot) == false {
+			if !merkleRoot.IsEqual(tt.merkleRoot) {
 				t.Errorf("Expected merkleRoot: %s\nGot: %s\n", tt.merkleRoot, merkleRoot.String())
 			}
 
@@ -119,7 +118,7 @@ func TestNewMerkleBlockFromMsg(t *testing.T) {
 			}
 
 			// check tree traversal was not bad
-			if mBlock.BadTree() == true {
+			if mBlock.BadTree() {
 				t.Errorf("Tree traversal was bad")
 			}
 		})

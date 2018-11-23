@@ -25,6 +25,8 @@ import (
 // size variable
 const MaxTxnCount = uint32(wire.MaxBlockPayload / 61)
 
+// PartialBlock is used to house intermediate information needed to decode a
+// wire.MsgMerkleBlock
 type PartialBlock struct {
 	numTx       uint32
 	finalHashes []*chainhash.Hash
@@ -118,7 +120,7 @@ func (m *PartialBlock) ExtractMatches() *chainhash.Hash {
 	merkleRootHash := m.traverseAndExtract(height, 0)
 
 	// check no problems occured during tree traversal
-	if m.bad == true {
+	if m.bad {
 		return nil
 	}
 
@@ -164,7 +166,7 @@ func (m *PartialBlock) traverseAndExtract(height, pos uint32) *chainhash.Hash {
 		if height == 0 && parent == byte(1) {
 			// at height 0 and we have a matched transaction
 			m.matchedHashes = append(m.matchedHashes, hash)
-			m.matchedItems = append(m.matchedItems, uint32(pos))
+			m.matchedItems = append(m.matchedItems, pos)
 		}
 
 		return hash
