@@ -23,7 +23,7 @@ import (
 // we have opted to use a similar calculation to core based on smallest
 // possible transaction size spending OP_TRUE at 61 bytes with max block
 // size variable
-const MaxTxnCount = uint32(wire.MaxBlockPayload / 61)
+var MaxTxnCount = wire.MaxBlockPayload() / 61
 
 // PartialBlock is used to house intermediate information needed to decode a
 // wire.MsgMerkleBlock
