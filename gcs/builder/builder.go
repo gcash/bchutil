@@ -337,6 +337,12 @@ func BuildBasicFilter(block *wire.MsgBlock, prevOutScripts [][]byte) (*gcs.Filte
 		b.AddEntry(prevScript)
 	}
 
+	// Adjust the filter false positive rate
+	fpScaleFactor := float64(len(b.data)) / float64(gcs.TargetElements)
+	if fpScaleFactor > 1 {
+		b.m = uint64(float64(b.m) * fpScaleFactor)
+	}
+
 	return b.Build()
 }
 

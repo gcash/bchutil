@@ -35,6 +35,12 @@ const (
 	// varIntProtoVer is the protocol version to use for serializing N as a
 	// VarInt.
 	varIntProtoVer uint32 = 0
+
+	// TargetElements is roughly the number of elements expected
+	// in a 1 MB block. We use this number to calculate how many times
+	// larger the actual number of elements inserted into the filter is
+	// so that we can adjust the filter false positive rate accordingly.
+	TargetElements = 8000
 )
 
 // fastReduction calculates a mapping that's more ore less equivalent to: x mod
@@ -208,6 +214,10 @@ func FromNBytes(P uint8, M uint64, d []byte) (*Filter, error) {
 	}
 	if N >= (1 << 32) {
 		return nil, ErrNTooBig
+	}
+	fpScaleFactor := float64(N) / float64(TargetElements)
+	if fpScaleFactor > 1 {
+		M = uint64(float64(M) * fpScaleFactor)
 	}
 	return FromBytes(uint32(N), P, M, buffer.Bytes())
 }
