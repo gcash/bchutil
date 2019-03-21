@@ -294,7 +294,7 @@ func BuildBasicFilter(block *wire.MsgBlock, prevOutScripts [][]byte) (*gcs.Filte
 // is a zero hash.
 func BuildMempoolFilter(txs []*wire.MsgTx, prevOutScripts [][]byte) (*gcs.Filter, error) {
 	block := wire.NewMsgBlock(&wire.BlockHeader{})
-	block.Transactions = txs
+	block.Transactions = append([]*wire.MsgTx{{}}, txs...)
 	return buildBasicFilterWithKey(block, prevOutScripts, chainhash.Hash{})
 }
 
