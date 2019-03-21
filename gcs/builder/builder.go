@@ -287,7 +287,19 @@ func WithRandomKey() *GCSBuilder {
 // as well as the data pushes within all the outputs created within a block.
 func BuildBasicFilter(block *wire.MsgBlock, prevOutScripts [][]byte) (*gcs.Filter, error) {
 	blockHash := block.BlockHash()
-	b := WithKeyHash(&blockHash)
+	return buildBasicFilterWithKey(block, prevOutScripts, blockHash)
+}
+
+// BuildMempoolFilter builds a mempool filter. The key that is used for the filter
+// is a zero hash.
+func BuildMempoolFilter(txs []*wire.MsgTx, prevOutScripts [][]byte) (*gcs.Filter, error) {
+	block := wire.NewMsgBlock(&wire.BlockHeader{})
+	block.Transactions = txs
+	return buildBasicFilterWithKey(block, prevOutScripts, chainhash.Hash{})
+}
+
+func buildBasicFilterWithKey(block *wire.MsgBlock, prevOutScripts [][]byte, key chainhash.Hash) (*gcs.Filter, error) {
+	b := WithKeyHash(&key)
 
 	// If the filter had an issue with the specified key, then we force it
 	// to bubble up here by calling the Key() function.
