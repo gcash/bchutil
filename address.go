@@ -7,6 +7,7 @@ package bchutil
 import (
 	"encoding/hex"
 	"errors"
+	"strings"
 
 	"github.com/gcash/bchd/bchec"
 	"github.com/gcash/bchd/chaincfg"
@@ -81,8 +82,8 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 
 	// Add prefix if it does not exist
 	addrWithPrefix := addr
-	if addr[:len(pre)+1] != pre+":" {
-		addrWithPrefix = pre + ":" + addr
+	if !strings.EqualFold(addr[:len(pre)+1], pre+":") {
+		addrWithPrefix = pre + ":" + strings.ToLower(addr) // so we don't mix cases
 	}
 
 	// Switch on decoded length to determine the type.
