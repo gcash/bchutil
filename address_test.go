@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/gcash/bchd/chaincfg"
@@ -30,6 +31,22 @@ func TestAddresses(t *testing.T) {
 		{
 			name:    "cashaddr mainnet p2pkh",
 			addr:    "qr95sy3j9xwd2ap32xkykttr4cvcu7as4y0qverfuy",
+			encoded: "qr95sy3j9xwd2ap32xkykttr4cvcu7as4y0qverfuy",
+			valid:   true,
+			result: bchutil.TstAddressPubKeyHash(
+				[ripemd160.Size]byte{203, 72, 18, 50, 41, 156, 213, 116, 49, 81,
+					172, 75, 45, 99, 174, 25, 142, 123, 176, 169},
+				&chaincfg.MainNetParams),
+			f: func() (bchutil.Address, error) {
+				pkHash := []byte{203, 72, 18, 50, 41, 156, 213, 116, 49, 81,
+					172, 75, 45, 99, 174, 25, 142, 123, 176, 169}
+				return bchutil.NewAddressPubKeyHash(pkHash, &chaincfg.MainNetParams)
+			},
+			net: &chaincfg.MainNetParams,
+		},
+		{
+			name:    "cashaddr mainnet uppercase p2pkh",
+			addr:    strings.ToUpper("qr95sy3j9xwd2ap32xkykttr4cvcu7as4y0qverfuy"),
 			encoded: "qr95sy3j9xwd2ap32xkykttr4cvcu7as4y0qverfuy",
 			valid:   true,
 			result: bchutil.TstAddressPubKeyHash(
@@ -577,7 +594,7 @@ func TestAddresses(t *testing.T) {
 			if decodedStringer, ok := decoded.(fmt.Stringer); ok {
 				addr := test.addr
 
-				if addr != decodedStringer.String() {
+				if !strings.EqualFold(addr, decodedStringer.String()) {
 					t.Errorf("%v: String on decoded value does not match expected value: %v != %v",
 						test.name, test.addr, decodedStringer.String())
 					return
