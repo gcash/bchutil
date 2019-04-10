@@ -6,6 +6,7 @@
 package builder
 
 import (
+	"bytes"
 	"crypto/rand"
 	"fmt"
 	"math"
@@ -283,22 +284,23 @@ func WithRandomKey() *GCSBuilder {
 }
 
 // BuildBasicFilter builds a basic GCS filter from a block. A basic GCS filter
-// will contain all the previous output scripts spent by inputs within a block,
-// as well as the data pushes within all the outputs created within a block.
-func BuildBasicFilter(block *wire.MsgBlock, prevOutScripts [][]byte) (*gcs.Filter, error) {
+// will contain all the outpoints spent by inputs within a block, as well as
+// the scriptPubKeys in each output in the block. Along with the data pushes
+// for each OP_RETURN output.
+func BuildBasicFilter(block *wire.MsgBlock) (*gcs.Filter, error) {
 	blockHash := block.BlockHash()
-	return buildBasicFilterWithKey(block, prevOutScripts, blockHash)
+	return buildBasicFilterWithKey(block, blockHash)
 }
 
 // BuildMempoolFilter builds a mempool filter. The key that is used for the filter
 // is a zero hash.
-func BuildMempoolFilter(txs []*wire.MsgTx, prevOutScripts [][]byte) (*gcs.Filter, error) {
+func BuildMempoolFilter(txs []*wire.MsgTx) (*gcs.Filter, error) {
 	block := wire.NewMsgBlock(&wire.BlockHeader{})
 	block.Transactions = append([]*wire.MsgTx{{}}, txs...)
-	return buildBasicFilterWithKey(block, prevOutScripts, chainhash.Hash{})
+	return buildBasicFilterWithKey(block, chainhash.Hash{})
 }
 
-func buildBasicFilterWithKey(block *wire.MsgBlock, prevOutScripts [][]byte, key chainhash.Hash) (*gcs.Filter, error) {
+func buildBasicFilterWithKey(block *wire.MsgBlock, key chainhash.Hash) (*gcs.Filter, error) {
 	b := WithKeyHash(&key)
 
 	// If the filter had an issue with the specified key, then we force it
@@ -311,6 +313,22 @@ func buildBasicFilterWithKey(block *wire.MsgBlock, prevOutScripts [][]byte, key 
 	// In order to build a basic filter, we'll range over the entire block,
 	// adding each whole script itself.
 	for i, tx := range block.Transactions {
+
+		// For each tx in excluding the coinbase, write the outpoint.
+		for _, txIn := range tx.TxIn {
+			if i == 0 {
+				continue
+			}
+			var buf bytes.Buffer
+			if err := txIn.PreviousOutPoint.Serialize(&buf); err != nil {
+				continue
+			}
+			serializedOutpoint := buf.Bytes()
+			if len(serializedOutpoint) > 0 {
+				b.AddEntry(serializedOutpoint)
+			}
+		}
+
 		// For each output in a transaction, we'll add each pkScript.
 		for _, txOut := range tx.TxOut {
 			if len(txOut.PkScript) == 0 {
@@ -337,16 +355,6 @@ func buildBasicFilterWithKey(block *wire.MsgBlock, prevOutScripts [][]byte, key 
 
 			b.AddEntry(txOut.PkScript)
 		}
-	}
-
-	// In the second pass, we'll also add all the prevOutScripts
-	// individually as elements.
-	for _, prevScript := range prevOutScripts {
-		if len(prevScript) == 0 {
-			continue
-		}
-
-		b.AddEntry(prevScript)
 	}
 
 	return b.Build()
