@@ -77,6 +77,47 @@ func (m *merkleBlock) traverseAndBuild(height, pos uint32) {
 	}
 }
 
+type blockFilterer struct {
+	filter         *Filter
+	matchedIndices map[int]bool
+}
+
+type txWithIndex struct {
+	tx    *bchutil.Tx
+	index int
+}
+
+// checkFilterTx will check if the transaction is relevant and recursively loop through the
+// inputs to double check transactions that are in the block but were already processed.
+// This is necessary if the block is not sorted in topological order.
+func (bf *blockFilterer) checkFilterTx(tx *bchutil.Tx, txIndex int, inputs map[chainhash.Hash][]*txWithIndex) {
+	if bf.filter.MatchTxAndUpdate(tx) {
+		bf.matchedIndices[txIndex] = true
+		if dependentTxs, ok := inputs[tx.MsgTx().TxHash()]; ok {
+			for _, dependentTx := range dependentTxs {
+				bf.checkFilterTx(dependentTx.tx, dependentTx.index, inputs)
+			}
+		}
+	}
+}
+
+// GetMatchedIndices returns the index of the transactions that match the filter.
+// This works even with CTOR ordering.
+func GetMatchedIndices(block *bchutil.Block, filter *Filter) map[int]bool {
+	bf := blockFilterer{matchedIndices: make(map[int]bool), filter: filter}
+	inputs := make(map[chainhash.Hash][]*txWithIndex)
+	for txIndex, tx := range block.Transactions() {
+		for _, in := range tx.MsgTx().TxIn {
+			inputTxs := inputs[in.PreviousOutPoint.Hash]
+			inputTxs = append(inputTxs, &txWithIndex{tx, txIndex})
+			inputs[in.PreviousOutPoint.Hash] = inputTxs
+		}
+
+		bf.checkFilterTx(tx, txIndex, inputs)
+	}
+	return bf.matchedIndices
+}
+
 // NewMerkleBlock returns a new *wire.MsgMerkleBlock and an array of the matched
 // transaction index numbers based on the passed block and filter.
 func NewMerkleBlock(block *bchutil.Block, filter *Filter) (*wire.MsgMerkleBlock, []uint32) {
@@ -88,9 +129,11 @@ func NewMerkleBlock(block *bchutil.Block, filter *Filter) (*wire.MsgMerkleBlock,
 	}
 
 	// Find and keep track of any transactions that match the filter.
+	matchedMap := GetMatchedIndices(block, filter)
+
 	var matchedIndices []uint32
 	for txIndex, tx := range block.Transactions() {
-		if filter.MatchTxAndUpdate(tx) {
+		if matchedMap[txIndex] {
 			mBlock.matchedBits = append(mBlock.matchedBits, 0x01)
 			matchedIndices = append(matchedIndices, uint32(txIndex))
 		} else {

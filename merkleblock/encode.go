@@ -101,10 +101,10 @@ func NewMerkleBlockWithFilter(block *bchutil.Block, filter *bloom.Filter) (*wire
 		matchedBits: make([]byte, 0, numTx),
 	}
 
-	// Find and keep track of any transactions that match the filter.
+	matchedMap := bloom.GetMatchedIndices(block, filter)
 	var matchedIndices []uint32
 	for txIndex, tx := range block.Transactions() {
-		if filter.MatchTxAndUpdate(tx) {
+		if matchedMap[txIndex] {
 			mBlock.matchedBits = append(mBlock.matchedBits, 0x01)
 			matchedIndices = append(matchedIndices, uint32(txIndex))
 		} else {
