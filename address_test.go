@@ -704,7 +704,7 @@ func TestAddresses(t *testing.T) {
 	}
 }
 
-var validCashAddreTestVectors []string = []string{
+var validCashAddreTestVectors = []string{
 	"prefix:x64nx6hz",
 	"PREFIX:X64NX6HZ",
 	"p:gpf8m4h7",
@@ -722,7 +722,7 @@ func TestValidCashAddrTestVectors(t *testing.T) {
 	}
 }
 
-var invalidCashAddreTestVectors []string = []string{
+var invalidCashAddreTestVectors = []string{
 	"prefix:x32nx6hz",
 	"prEfix:x64nx6hz",
 	"prefix:x64nx6Hz",

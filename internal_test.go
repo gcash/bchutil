@@ -12,11 +12,12 @@ interface. The functions are only exported while the tests are being run.
 package bchutil
 
 import (
+	"strings"
+
 	"github.com/gcash/bchd/bchec"
 	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchutil/base58"
 	"golang.org/x/crypto/ripemd160"
-	"strings"
 )
 
 // SetBlockBytes sets the internal serialized block byte buffer to the passed
@@ -82,7 +83,7 @@ func TstAddressPubKey(serializedPubKey []byte, pubKeyFormat PubKeyFormat,
 	pubKey, _ := bchec.ParsePubKey(serializedPubKey, bchec.S256())
 	return &AddressPubKey{
 		pubKeyFormat: pubKeyFormat,
-		pubKey:       (*bchec.PublicKey)(pubKey),
+		pubKey:       pubKey,
 		pubKeyHashID: netID,
 	}
 }
