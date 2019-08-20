@@ -6,9 +6,11 @@ go:
 
 sudo: false
 
+env:
+  - GO111MODULE=on
+
 before_install:
-  - go get gopkg.in/alecthomas/gometalinter.v2
-  - gometalinter.v2 --install
+  - go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 
 script:
   - export PATH=$PATH:$HOME/gopath/bin
