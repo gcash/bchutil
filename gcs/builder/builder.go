@@ -12,7 +12,6 @@ import (
 	"math"
 
 	"github.com/gcash/bchd/chaincfg/chainhash"
-	"github.com/gcash/bchd/txscript"
 	"github.com/gcash/bchd/wire"
 	"github.com/gcash/bchutil/gcs"
 )
@@ -332,24 +331,6 @@ func buildBasicFilterWithKey(block *wire.MsgBlock, key chainhash.Hash) (*gcs.Fil
 		// For each output in a transaction, we'll add each pkScript.
 		for _, txOut := range tx.TxOut {
 			if len(txOut.PkScript) == 0 {
-				continue
-			}
-
-			// In order to allow the filters to later be committed
-			// to within an OP_RETURN output, we ignore all OP_RETURNs
-			// in the coinbase to avoid a circular dependency.
-			if i == 0 && txOut.PkScript[0] == txscript.OP_RETURN {
-				continue
-			}
-
-			// If this is a non-coinbase OP_RETURN output then add all
-			// the data elements in the script.
-			if txOut.PkScript[0] == txscript.OP_RETURN {
-				dataElements, err := txscript.ExtractDataElements(txOut.PkScript)
-				if err != nil {
-					continue
-				}
-				b.AddEntries(dataElements)
 				continue
 			}
 
