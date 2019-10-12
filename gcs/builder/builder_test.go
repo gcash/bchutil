@@ -309,29 +309,6 @@ func TestBuildBasicFilter(t *testing.T) {
 			}
 		}
 	}
-
-	// Test OP_RETURN
-	matches, err = filter.Match(key, []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x09, 0x09})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !matches {
-		t.Error("OP_RETURN data element 0 does not match the filter")
-	}
-	matches, err = filter.Match(key, []byte{0xff, 0xff, 0xff, 0xff})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !matches {
-		t.Error("OP_RETURN data element 1 does not match the filter")
-	}
-	matches, err = filter.Match(key, []byte{0x07})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if matches {
-		t.Error("OP_RETURN data element 2 matches the filter when it should not")
-	}
 }
 
 var TestBlock = wire.MsgBlock{

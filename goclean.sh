@@ -22,6 +22,5 @@ test -z "$(golangci-lint run --disable-all \
 --enable=golint \
 --enable=vet \
 --enable=gosimple \
---enable=unconvert \
---deadline=10m | grep -v 'ALL_CAPS\|OP_' 2>&1 | tee /dev/stderr)"
+--enable=unconvert | grep -v 'ALL_CAPS\|OP_' 2>&1 | tee /dev/stderr)"
 go test ./...
