@@ -22,16 +22,19 @@ import (
 )
 
 // NewTLSCertPair returns a new PEM-encoded x.509 certificate pair
-// based on a 521-bit ECDSA private key.  The machine's local interface
+// based on a 256-bit ECDSA private key. The machine's local interface
 // addresses and all variants of IPv4 and IPv6 localhost are included as
 // valid IP addresses.
+//
+// 256-bit ECDSA is chosen so a single cert can support both RPC and gRPC
+// connections when auto generating certificates in bchd.
 func NewTLSCertPair(organization string, validUntil time.Time, extraHosts []string) (cert, key []byte, err error) {
 	now := time.Now()
 	if validUntil.Before(now) {
 		return nil, nil, errors.New("validUntil would create an already-expired certificate")
 	}
 
-	priv, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, nil, err
 	}
