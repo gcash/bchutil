@@ -299,7 +299,25 @@ func TestAddresses(t *testing.T) {
 			},
 			net: &chaincfg.TestNet3Params,
 		},
-
+		{
+			// Taken from bitcoind base58_keys_valid.
+			name:    "legacy testnet p2sh (reported issue)",
+			addr:    "2MscXFWM3yfDTYxGGC2dXCZvcMd6ySyqgPt",
+			encoded: "2MscXFWM3yfDTYxGGC2dXCZvcMd6ySyqgPt",
+			valid:   true,
+			result: bchutil.TstLegacyAddressScriptHash(
+				[ripemd160.Size]byte{
+					0x4, 0x7, 0x25, 0x2a, 0x3a, 0x2e, 0xb1, 0x5c, 0x8f, 0xc1,
+					0x8d, 0xf4, 0xd, 0xf0, 0x5b, 0x34, 0xc8, 0xfe, 0x9e, 0x11},
+				chaincfg.TestNet3Params.LegacyScriptHashAddrID),
+			f: func() (bchutil.Address, error) {
+				hash := []byte{
+					0x4, 0x7, 0x25, 0x2a, 0x3a, 0x2e, 0xb1, 0x5c, 0x8f, 0xc1,
+					0x8d, 0xf4, 0xd, 0xf0, 0x5b, 0x34, 0xc8, 0xfe, 0x9e, 0x11}
+				return bchutil.NewLegacyAddressScriptHashFromHash(hash, &chaincfg.TestNet3Params)
+			},
+			net: &chaincfg.TestNet3Params,
+		},
 		// Negative legacy P2SH tests.
 		{
 			name:  "legacy p2sh wrong hash length",

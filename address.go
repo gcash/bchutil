@@ -86,6 +86,8 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 		addrWithPrefix = pre + ":" + strings.ToLower(addr) // so we don't mix cases
 	}
 
+	var cashaddrErr error
+
 	// Switch on decoded length to determine the type.
 	decoded, _, typ, err := checkDecodeCashAddress(addrWithPrefix)
 	if err == nil {
@@ -103,7 +105,7 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 			return nil, errors.New("decoded address is of unknown size")
 		}
 	} else if err == ErrChecksumMismatch {
-		return nil, ErrChecksumMismatch
+		cashaddrErr = ErrChecksumMismatch
 	}
 
 	// Serialized public keys are either 65 bytes (130 hex chars) if
@@ -121,6 +123,9 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 	if err != nil {
 		if err == base58.ErrChecksum {
 			return nil, ErrChecksumMismatch
+		}
+		if cashaddrErr != nil {
+			return nil, cashaddrErr
 		}
 		return nil, errors.New("decoded address is of unknown format")
 	}
