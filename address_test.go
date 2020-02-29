@@ -300,7 +300,6 @@ func TestAddresses(t *testing.T) {
 			net: &chaincfg.TestNet3Params,
 		},
 		{
-			// Taken from bitcoind base58_keys_valid.
 			name:    "legacy testnet p2sh (reported issue)",
 			addr:    "2MscXFWM3yfDTYxGGC2dXCZvcMd6ySyqgPt",
 			encoded: "2MscXFWM3yfDTYxGGC2dXCZvcMd6ySyqgPt",
