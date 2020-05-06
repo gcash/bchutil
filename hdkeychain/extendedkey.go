@@ -295,6 +295,12 @@ func (k *ExtendedKey) Child(i uint32) (*ExtendedKey, error) {
 		ilNum.Add(ilNum, keyNum)
 		ilNum.Mod(ilNum, bchec.S256().N)
 		childKey = ilNum.Bytes()
+
+		// Pad child key if less than 32 bytes
+		if len(childKey) < 32 {
+			extra := make([]byte, 32-len(childKey))
+			childKey = append(extra, childKey...)
+		}
 		isPrivate = true
 	} else {
 		// Case #3.
