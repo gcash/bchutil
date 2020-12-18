@@ -105,7 +105,34 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 			return nil, errors.New("decoded address is of unknown size")
 		}
 	} else if err == ErrChecksumMismatch {
-		cashaddrErr = ErrChecksumMismatch
+
+		// try to decode with slp prefix instead
+		pre := defaultNet.SlpAddressPrefix
+
+		addrWithPrefix := addr
+		if !strings.EqualFold(addr[:len(pre)+1], pre+":") {
+			addrWithPrefix = pre + ":" + strings.ToLower(addr) // so we don't mix cases
+		}
+
+		// Switch on decoded length to determine the type.
+		decoded, _, typ, err := checkDecodeCashAddress(addrWithPrefix)
+		if err == nil {
+			switch len(decoded) {
+			case ripemd160.Size: // P2PKH or P2SH
+				switch typ {
+				case AddrTypePayToPubKeyHash:
+					return NewSlpAddressPubKeyHash(decoded, defaultNet)
+				case AddrTypePayToScriptHash:
+					return NewSlpAddressScriptHashFromHash(decoded, defaultNet)
+				default:
+					return nil, ErrUnknownAddressType
+				}
+			default:
+				return nil, errors.New("decoded address is of unknown size")
+			}
+		} else if err == ErrChecksumMismatch {
+			cashaddrErr = ErrChecksumMismatch
+		}
 	}
 
 	// Serialized public keys are either 65 bytes (130 hex chars) if
@@ -149,6 +176,56 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 	}
 }
 
+// ConvertSlpToCashAddress converts an slp formatted address to cash formatted address
+func ConvertSlpToCashAddress(addr Address, params *chaincfg.Params) (Address, error) {
+	var (
+		bchAddr Address
+		err     error
+	)
+	switch a := addr.(type) {
+	case *AddressPubKeyHash:
+		hash := a.Hash160()
+		bchAddr, err = NewAddressPubKeyHash(hash[:], params)
+		if err != nil {
+			return nil, err
+		}
+	case *AddressScriptHash:
+		hash := a.Hash160()
+		bchAddr, err = NewAddressScriptHashFromHash(hash[:], params)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New("invalid address type")
+	}
+	return bchAddr, nil
+}
+
+// ConvertCashToSlpAddress converts a cash formatted address to slp formatted address
+func ConvertCashToSlpAddress(addr Address, params *chaincfg.Params) (Address, error) {
+	var (
+		bchAddr Address
+		err     error
+	)
+	switch a := addr.(type) {
+	case *AddressPubKeyHash:
+		hash := a.Hash160()
+		bchAddr, err = NewSlpAddressPubKeyHash(hash[:], params)
+		if err != nil {
+			return nil, err
+		}
+	case *AddressScriptHash:
+		hash := a.Hash160()
+		bchAddr, err = NewSlpAddressScriptHashFromHash(hash[:], params)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New("invalid address type")
+	}
+	return bchAddr, nil
+}
+
 // encodeLegacyAddress returns a human-readable payment address given a ripemd160 hash
 // and netID which encodes the bitcoin network and address type.  It is used
 // in both legacy pay-to-pubkey-hash (P2PKH) and pay-to-script-hash (P2SH) address
@@ -174,10 +251,20 @@ type AddressPubKeyHash struct {
 	prefix string
 }
 
-// NewAddressPubKeyHash returns a new AddressPubKeyHash.  pkHash mustbe 20
+// NewAddressPubKeyHash returns a new AddressPubKeyHash. pkHash must be 20
 // bytes.
 func NewAddressPubKeyHash(pkHash []byte, net *chaincfg.Params) (*AddressPubKeyHash, error) {
 	return newAddressPubKeyHash(pkHash, net)
+}
+
+// NewSlpAddressPubKeyHash returns a new SLP AddressPubKeyHash.
+func NewSlpAddressPubKeyHash(pkHash []byte, net *chaincfg.Params) (*AddressPubKeyHash, error) {
+	addr, err := newAddressPubKeyHash(pkHash, net)
+	if err != nil {
+		return nil, err
+	}
+	addr.prefix = net.SlpAddressPrefix
+	return addr, nil
 }
 
 // newAddressPubKeyHash is the internal API to create a pubkey hash address
@@ -245,6 +332,16 @@ func NewAddressScriptHash(serializedScript []byte, net *chaincfg.Params) (*Addre
 // must be 20 bytes.
 func NewAddressScriptHashFromHash(scriptHash []byte, net *chaincfg.Params) (*AddressScriptHash, error) {
 	return newAddressScriptHashFromHash(scriptHash, net)
+}
+
+// NewSlpAddressScriptHashFromHash returns a new SLP NewSlpAddressScriptHash.
+func NewSlpAddressScriptHashFromHash(scriptHash []byte, net *chaincfg.Params) (*AddressScriptHash, error) {
+	addr, err := newAddressScriptHashFromHash(scriptHash, net)
+	if err != nil {
+		return addr, err
+	}
+	addr.prefix = net.SlpAddressPrefix
+	return addr, nil
 }
 
 // newAddressScriptHashFromHash is the internal API to create a script hash

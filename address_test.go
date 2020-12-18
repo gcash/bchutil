@@ -760,3 +760,159 @@ func TestInvalidCashAddreTestVectors(t *testing.T) {
 		}
 	}
 }
+
+func TestDecodeCashAddressSlpMainnet(t *testing.T) {
+	addrStr := "simpleledger:qrkjty23a5yl7vcvcnyh4dpnxxzuzs4lzqvesp65yq"
+	prefix, data, _ := bchutil.DecodeCashAddress(addrStr)
+	if prefix != "simpleledger" {
+		t.Fatal("decode failed")
+	}
+	if len(data) != 34 {
+		t.Fatal("data wrong length")
+	}
+}
+
+func TestDecodeCashAddressSlpMainnetP2sh(t *testing.T) {
+	addrStr := "simpleledger:pzxvc3k38r4rq2x2asmdpnz4wk92lqazpg9jh3j0k9"
+	prefix, data, _ := bchutil.DecodeCashAddress(addrStr)
+	if prefix != "simpleledger" {
+		t.Fatal("decode failed")
+	}
+	if len(data) != 34 {
+		t.Fatal("data wrong length")
+	}
+}
+
+func TestDecodeCashAddressSlpTestnet(t *testing.T) {
+	addrStr := "slptest:qq69xxsfujh45g23dv8uwfv02fj3z262cgfda57wzl"
+	prefix, data, _ := bchutil.DecodeCashAddress(addrStr)
+	if prefix != "slptest" {
+		t.Fatal("decode failed")
+	}
+	if len(data) != 34 {
+		t.Fatal("data wrong length")
+	}
+}
+
+func TestDecodeCashAddressSlpTestnetP2sh(t *testing.T) {
+	addrStr := "slptest:ppmuknuf0l2z38mkdnjcv76yhaeh6fqhluv3gffh99"
+	prefix, data, _ := bchutil.DecodeCashAddress(addrStr)
+	if prefix != "slptest" {
+		t.Fatal("decode failed")
+	}
+	if len(data) != 34 {
+		t.Fatal("data wrong length")
+	}
+}
+
+func TestDecodeAddressSlpMainnet(t *testing.T) {
+	slpAddrStr := "qrkjty23a5yl7vcvcnyh4dpnxxzuzs4lzqvesp65yq"
+	addr, err := bchutil.DecodeAddress(slpAddrStr, &chaincfg.MainNetParams)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if addr.String() != slpAddrStr {
+		t.Fatal("decode failed")
+	}
+}
+
+func TestDecodeAddressSlpMainnetP2sh(t *testing.T) {
+	slpAddrStr := "pzxvc3k38r4rq2x2asmdpnz4wk92lqazpg9jh3j0k9"
+	addr, err := bchutil.DecodeAddress(slpAddrStr, &chaincfg.MainNetParams)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if addr.String() != slpAddrStr {
+		t.Fatal("decode failed")
+	}
+}
+
+func TestDecodeAddressSlpTestnet(t *testing.T) {
+	slpAddrStr := "qq69xxsfujh45g23dv8uwfv02fj3z262cgfda57wzl"
+	addr, err := bchutil.DecodeAddress(slpAddrStr, &chaincfg.TestNet3Params)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if addr.String() != slpAddrStr {
+		t.Fatal("decode failed")
+	}
+}
+
+func TestDecodeAddressSlpTestnetP2sh(t *testing.T) {
+	slpAddrStr := "ppmuknuf0l2z38mkdnjcv76yhaeh6fqhluv3gffh99"
+	addr, err := bchutil.DecodeAddress(slpAddrStr, &chaincfg.TestNet3Params)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if addr.String() != slpAddrStr {
+		t.Fatal("decode failed")
+	}
+}
+
+func TestDecodeAddressSlpRegnet(t *testing.T) {
+	slpAddrStr := "qq69xxsfujh45g23dv8uwfv02fj3z262cgfda57wzl"
+	addr, err := bchutil.DecodeAddress(slpAddrStr, &chaincfg.RegressionNetParams)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if addr.String() != slpAddrStr {
+		t.Fatal("decode failed")
+	}
+}
+
+func TestConvertCashToSlpAddress(t *testing.T) {
+	addrStr := "qprqzzhhve7sgysgf8h29tumywnaeyqm7y6e869uc6"
+	params := &chaincfg.MainNetParams
+
+	addr, _ := bchutil.DecodeAddress(addrStr, params)
+	slpAddr, err := bchutil.ConvertCashToSlpAddress(addr, params)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if slpAddr.String() != "qprqzzhhve7sgysgf8h29tumywnaeyqm7ykzvpsuxy" {
+		t.Fatal("incorrect conversion")
+	}
+}
+
+func TestConvertCashToSlpAddressP2sh(t *testing.T) {
+	addrStr := "pzmj0ueqasnsw80a26th5t2gsz5evcxsps2tavljvp"
+	params := &chaincfg.MainNetParams
+
+	addr, _ := bchutil.DecodeAddress(addrStr, params)
+	slpAddr, err := bchutil.ConvertCashToSlpAddress(addr, params)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if slpAddr.String() != "pzmj0ueqasnsw80a26th5t2gsz5evcxspsxskh2jjl" {
+		t.Fatal("incorrect conversion")
+	}
+}
+
+func TestConvertSlpToCashAddress(t *testing.T) {
+	addrStr := "qprqzzhhve7sgysgf8h29tumywnaeyqm7ykzvpsuxy"
+	params := &chaincfg.MainNetParams
+
+	addr, _ := bchutil.DecodeAddress(addrStr, params)
+	slpAddr, err := bchutil.ConvertSlpToCashAddress(addr, params)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if slpAddr.String() != "qprqzzhhve7sgysgf8h29tumywnaeyqm7y6e869uc6" {
+		t.Fatal("incorrect conversion")
+	}
+}
+
+func TestConvertSlpToCashAddressP2sh(t *testing.T) {
+	addrStr := "pzmj0ueqasnsw80a26th5t2gsz5evcxspsxskh2jjl"
+	params := &chaincfg.MainNetParams
+
+	addr, _ := bchutil.DecodeAddress(addrStr, params)
+	slpAddr, err := bchutil.ConvertSlpToCashAddress(addr, params)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if slpAddr.String() != "pzmj0ueqasnsw80a26th5t2gsz5evcxsps2tavljvp" {
+		t.Fatal("incorrect conversion")
+	}
+}
