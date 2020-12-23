@@ -763,7 +763,24 @@ func TestInvalidCashAddreTestVectors(t *testing.T) {
 
 func TestDecodeCashAddressSlpMainnet(t *testing.T) {
 	addrStr := "simpleledger:qrkjty23a5yl7vcvcnyh4dpnxxzuzs4lzqvesp65yq"
-	prefix, data, _ := bchutil.DecodeCashAddress(addrStr)
+	prefix, data, err := bchutil.DecodeCashAddress(addrStr)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if prefix != "simpleledger" {
+		t.Fatal("decode failed")
+	}
+	if len(data) != 34 {
+		t.Fatal("data wrong length")
+	}
+}
+
+func TestDecodeCashAddressSlpMainnetUpperCase(t *testing.T) {
+	addrStr := "SIMPLELEDGER:QRKJTY23A5YL7VCVCNYH4DPNXXZUZS4LZQVESP65YQ"
+	prefix, data, err := bchutil.DecodeCashAddress(addrStr)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 	if prefix != "simpleledger" {
 		t.Fatal("decode failed")
 	}
@@ -774,7 +791,10 @@ func TestDecodeCashAddressSlpMainnet(t *testing.T) {
 
 func TestDecodeCashAddressSlpMainnetP2sh(t *testing.T) {
 	addrStr := "simpleledger:pzxvc3k38r4rq2x2asmdpnz4wk92lqazpg9jh3j0k9"
-	prefix, data, _ := bchutil.DecodeCashAddress(addrStr)
+	prefix, data, err := bchutil.DecodeCashAddress(addrStr)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 	if prefix != "simpleledger" {
 		t.Fatal("decode failed")
 	}
@@ -785,7 +805,10 @@ func TestDecodeCashAddressSlpMainnetP2sh(t *testing.T) {
 
 func TestDecodeCashAddressSlpTestnet(t *testing.T) {
 	addrStr := "slptest:qq69xxsfujh45g23dv8uwfv02fj3z262cgfda57wzl"
-	prefix, data, _ := bchutil.DecodeCashAddress(addrStr)
+	prefix, data, err := bchutil.DecodeCashAddress(addrStr)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 	if prefix != "slptest" {
 		t.Fatal("decode failed")
 	}
@@ -796,7 +819,10 @@ func TestDecodeCashAddressSlpTestnet(t *testing.T) {
 
 func TestDecodeCashAddressSlpTestnetP2sh(t *testing.T) {
 	addrStr := "slptest:ppmuknuf0l2z38mkdnjcv76yhaeh6fqhluv3gffh99"
-	prefix, data, _ := bchutil.DecodeCashAddress(addrStr)
+	prefix, data, err := bchutil.DecodeCashAddress(addrStr)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 	if prefix != "slptest" {
 		t.Fatal("decode failed")
 	}
@@ -864,7 +890,10 @@ func TestConvertCashToSlpAddress(t *testing.T) {
 	addrStr := "qprqzzhhve7sgysgf8h29tumywnaeyqm7y6e869uc6"
 	params := &chaincfg.MainNetParams
 
-	addr, _ := bchutil.DecodeAddress(addrStr, params)
+	addr, err := bchutil.DecodeAddress(addrStr, params)
+	if err != nil {
+		t.Fatal(err)
+	}
 	slpAddr, err := bchutil.ConvertCashToSlpAddress(addr, params)
 	if err != nil {
 		t.Fatal(err)
@@ -878,7 +907,10 @@ func TestConvertCashToSlpAddressP2sh(t *testing.T) {
 	addrStr := "pzmj0ueqasnsw80a26th5t2gsz5evcxsps2tavljvp"
 	params := &chaincfg.MainNetParams
 
-	addr, _ := bchutil.DecodeAddress(addrStr, params)
+	addr, err := bchutil.DecodeAddress(addrStr, params)
+	if err != nil {
+		t.Fatal(err)
+	}
 	slpAddr, err := bchutil.ConvertCashToSlpAddress(addr, params)
 	if err != nil {
 		t.Fatal(err)
@@ -893,7 +925,10 @@ func TestConvertSlpToCashAddress(t *testing.T) {
 	addrStr := "qprqzzhhve7sgysgf8h29tumywnaeyqm7ykzvpsuxy"
 	params := &chaincfg.MainNetParams
 
-	addr, _ := bchutil.DecodeAddress(addrStr, params)
+	addr, err := bchutil.DecodeAddress(addrStr, params)
+	if err != nil {
+		t.Fatal(err)
+	}
 	slpAddr, err := bchutil.ConvertSlpToCashAddress(addr, params)
 	if err != nil {
 		t.Fatal(err)
@@ -907,7 +942,10 @@ func TestConvertSlpToCashAddressP2sh(t *testing.T) {
 	addrStr := "pzmj0ueqasnsw80a26th5t2gsz5evcxspsxskh2jjl"
 	params := &chaincfg.MainNetParams
 
-	addr, _ := bchutil.DecodeAddress(addrStr, params)
+	addr, err := bchutil.DecodeAddress(addrStr, params)
+	if err != nil {
+		t.Fatal(err)
+	}
 	slpAddr, err := bchutil.ConvertSlpToCashAddress(addr, params)
 	if err != nil {
 		t.Fatal(err)
