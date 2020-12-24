@@ -257,14 +257,13 @@ func NewAddressPubKeyHash(pkHash []byte, net *chaincfg.Params) (*AddressPubKeyHa
 	return newAddressPubKeyHash(pkHash, net)
 }
 
-// NewSlpAddressPubKeyHash returns a new SLP AddressPubKeyHash.
+// NewSlpAddressPubKeyHash returns a new Slp formatted AddressPubKeyHash.
 func NewSlpAddressPubKeyHash(pkHash []byte, net *chaincfg.Params) (*AddressPubKeyHash, error) {
 	addr, err := newAddressPubKeyHash(pkHash, net)
-	if err != nil {
-		return nil, err
-	}
+	if addr != nil {
 	addr.prefix = net.SlpAddressPrefix
-	return addr, nil
+	}
+	return addr, err
 }
 
 // newAddressPubKeyHash is the internal API to create a pubkey hash address
@@ -334,15 +333,14 @@ func NewAddressScriptHashFromHash(scriptHash []byte, net *chaincfg.Params) (*Add
 	return newAddressScriptHashFromHash(scriptHash, net)
 }
 
-// NewSlpAddressScriptHashFromHash returns a new SLP NewSlpAddressScriptHash.
+// NewSlpAddressScriptHashFromHash returns a new Slp formatted AddressScriptHash.
 func NewSlpAddressScriptHashFromHash(scriptHash []byte, net *chaincfg.Params) (*AddressScriptHash, error) {
 	addr, err := newAddressScriptHashFromHash(scriptHash, net)
-	if err != nil {
+	if addr != nil {
+		addr.prefix = net.SlpAddressPrefix
+	}
 		return addr, err
 	}
-	addr.prefix = net.SlpAddressPrefix
-	return addr, nil
-}
 
 // newAddressScriptHashFromHash is the internal API to create a script hash
 // address with a known leading identifier byte for a network, rather than
