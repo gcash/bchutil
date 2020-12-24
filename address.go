@@ -240,7 +240,7 @@ func NewAddressPubKeyHash(pkHash []byte, net *chaincfg.Params) (*AddressPubKeyHa
 func NewSlpAddressPubKeyHash(pkHash []byte, net *chaincfg.Params) (*AddressPubKeyHash, error) {
 	addr, err := newAddressPubKeyHash(pkHash, net)
 	if addr != nil {
-	addr.prefix = net.SlpAddressPrefix
+		addr.prefix = net.SlpAddressPrefix
 	}
 	return addr, err
 }
@@ -318,8 +318,8 @@ func NewSlpAddressScriptHashFromHash(scriptHash []byte, net *chaincfg.Params) (*
 	if addr != nil {
 		addr.prefix = net.SlpAddressPrefix
 	}
-		return addr, err
-	}
+	return addr, err
+}
 
 // newAddressScriptHashFromHash is the internal API to create a script hash
 // address with a known leading identifier byte for a network, rather than
