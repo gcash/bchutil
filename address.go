@@ -178,52 +178,31 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 
 // ConvertSlpToCashAddress converts an slp formatted address to cash formatted address
 func ConvertSlpToCashAddress(addr Address, params *chaincfg.Params) (Address, error) {
-	var (
-		bchAddr Address
-		err     error
-	)
 	switch a := addr.(type) {
 	case *AddressPubKeyHash:
 		hash := a.Hash160()
-		bchAddr, err = NewAddressPubKeyHash(hash[:], params)
-		if err != nil {
-			return nil, err
-		}
+		return NewAddressPubKeyHash(hash[:], params)
+
 	case *AddressScriptHash:
 		hash := a.Hash160()
-		bchAddr, err = NewAddressScriptHashFromHash(hash[:], params)
-		if err != nil {
-			return nil, err
-		}
+		return NewAddressScriptHashFromHash(hash[:], params)
 	default:
 		return nil, errors.New("invalid address type")
 	}
-	return bchAddr, nil
 }
 
 // ConvertCashToSlpAddress converts a cash formatted address to slp formatted address
 func ConvertCashToSlpAddress(addr Address, params *chaincfg.Params) (Address, error) {
-	var (
-		bchAddr Address
-		err     error
-	)
 	switch a := addr.(type) {
 	case *AddressPubKeyHash:
 		hash := a.Hash160()
-		bchAddr, err = NewSlpAddressPubKeyHash(hash[:], params)
-		if err != nil {
-			return nil, err
-		}
+		return NewSlpAddressPubKeyHash(hash[:], params)
 	case *AddressScriptHash:
 		hash := a.Hash160()
-		bchAddr, err = NewSlpAddressScriptHashFromHash(hash[:], params)
-		if err != nil {
-			return nil, err
-		}
+		return NewSlpAddressScriptHashFromHash(hash[:], params)
 	default:
 		return nil, errors.New("invalid address type")
 	}
-	return bchAddr, nil
 }
 
 // encodeLegacyAddress returns a human-readable payment address given a ripemd160 hash
