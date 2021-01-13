@@ -854,6 +854,24 @@ func TestDecodeAddressSlpMainnetWithPrefix(t *testing.T) {
 	}
 }
 
+func TestDecodeAddressSlpMainnetWithWrongPrefix(t *testing.T) {
+	prefix := "bitcoincash"
+	slpAddrStr := "qrkjty23a5yl7vcvcnyh4dpnxxzuzs4lzqvesp65yq"
+	_, err := bchutil.DecodeAddress(prefix+":"+slpAddrStr, &chaincfg.MainNetParams)
+	if err != bchutil.ErrChecksumMismatch {
+		t.Fatal(err)
+	}
+}
+
+func TestDecodeAddressSlpMainnetWithUnknownPrefix(t *testing.T) {
+	prefix := "xyz"
+	slpAddrStr := "qrkjty23a5yl7vcvcnyh4dpnxxzuzs4lzqvesp65yq"
+	_, err := bchutil.DecodeAddress(prefix+":"+slpAddrStr, &chaincfg.MainNetParams)
+	if err != bchutil.ErrUnknownFormat {
+		t.Fatal(err)
+	}
+}
+
 func TestDecodeAddressSlpMainnetUpperCase(t *testing.T) {
 	slpAddrStr := "QRKJTY23A5YL7VCVCNYH4DPNXXZUZS4LZQVESP65YQ"
 	addr, err := bchutil.DecodeAddress(slpAddrStr, &chaincfg.MainNetParams)
@@ -874,6 +892,15 @@ func TestDecodeAddressSlpMainnetWithPrefixUpper(t *testing.T) {
 	}
 	if addr.String() != strings.ToLower(slpAddrStr) {
 		t.Fatal("decode failed")
+	}
+}
+
+func TestDecodeAddressSlpMainnetWithPrefixUpperWrongPrefix(t *testing.T) {
+	prefix := "BITCOINCASH"
+	slpAddrStr := "QRKJTY23A5YL7VCVCNYH4DPNXXZUZS4LZQVESP65YQ"
+	_, err := bchutil.DecodeAddress(prefix+":"+slpAddrStr, &chaincfg.MainNetParams)
+	if err != bchutil.ErrChecksumMismatch {
+		t.Fatal(err)
 	}
 }
 

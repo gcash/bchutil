@@ -36,6 +36,10 @@ var (
 
 	// ErrInvalidFormat describes an error where decoding failed due to invalid version
 	ErrInvalidFormat = errors.New("invalid format: version and/or checksum bytes missing")
+
+	// ErrUnknownFormat describes an error that occurs when an address cannot be
+	// decoded because it has an unknown format.
+	ErrUnknownFormat = errors.New("decoded address is of unknown format")
 )
 
 // Address is an interface type for any type of destination a transaction
@@ -109,7 +113,7 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 
 		// try to decode with slp prefix instead
 		addrWithPrefix := addr
-		if !strings.EqualFold(addr[:len(slpPrefix)+1], slpPrefix+":") {
+		if !strings.EqualFold(addr[:len(bchPrefix)+1], bchPrefix+":") && !strings.EqualFold(addr[:len(slpPrefix)+1], slpPrefix+":") {
 			addrWithPrefix = slpPrefix + ":" + strings.ToLower(addr) // so we don't mix cases
 		}
 
@@ -153,7 +157,7 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 		if cashaddrErr != nil {
 			return nil, cashaddrErr
 		}
-		return nil, errors.New("decoded address is of unknown format")
+		return nil, ErrUnknownFormat
 	}
 	switch len(decoded) {
 	case ripemd160.Size: // P2PKH or P2SH
