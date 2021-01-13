@@ -75,22 +75,23 @@ type Address interface {
 // When the address does not encode the network, such as in the case of a raw
 // public key, the address will be associated with the passed defaultNet.
 func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
-	pre := defaultNet.CashAddressPrefix
-	if len(addr) < len(pre)+2 {
+	bchPrefix := defaultNet.CashAddressPrefix
+	slpPrefix := defaultNet.SlpAddressPrefix
+	if len(addr) < len(bchPrefix)+2 || len(addr) < len(slpPrefix)+2 {
 		return nil, errors.New("invalid length address")
 	}
 
-	// Add prefix if it does not exist
+	// Add prefix if it does not exist, and try bch prefix first
 	addrWithPrefix := addr
-	if !strings.EqualFold(addr[:len(pre)+1], pre+":") {
-		addrWithPrefix = pre + ":" + strings.ToLower(addr) // so we don't mix cases
+	if !strings.EqualFold(addr[:len(bchPrefix)+1], bchPrefix+":") && !strings.EqualFold(addr[:len(slpPrefix)+1], slpPrefix+":") {
+		addrWithPrefix = bchPrefix + ":" + strings.ToLower(addr) // so we don't mix cases
 	}
 
 	var cashaddrErr error
 
 	// Switch on decoded length to determine the type.
-	decoded, _, typ, err := checkDecodeCashAddress(addrWithPrefix)
-	if err == nil {
+	decoded, prefix, typ, err := checkDecodeCashAddress(addrWithPrefix)
+	if err == nil && prefix != slpPrefix {
 		switch len(decoded) {
 		case ripemd160.Size: // P2PKH or P2SH
 			switch typ {
@@ -104,14 +105,12 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 		default:
 			return nil, errors.New("decoded address is of unknown size")
 		}
-	} else if err == ErrChecksumMismatch {
+	} else if err == ErrChecksumMismatch || prefix == slpPrefix {
 
 		// try to decode with slp prefix instead
-		pre := defaultNet.SlpAddressPrefix
-
 		addrWithPrefix := addr
-		if !strings.EqualFold(addr[:len(pre)+1], pre+":") {
-			addrWithPrefix = pre + ":" + strings.ToLower(addr) // so we don't mix cases
+		if !strings.EqualFold(addr[:len(slpPrefix)+1], slpPrefix+":") {
+			addrWithPrefix = slpPrefix + ":" + strings.ToLower(addr) // so we don't mix cases
 		}
 
 		// Switch on decoded length to determine the type.

@@ -842,9 +842,33 @@ func TestDecodeAddressSlpMainnet(t *testing.T) {
 	}
 }
 
+func TestDecodeAddressSlpMainnetWithPrefix(t *testing.T) {
+	prefix := "simpleledger"
+	slpAddrStr := "qrkjty23a5yl7vcvcnyh4dpnxxzuzs4lzqvesp65yq"
+	addr, err := bchutil.DecodeAddress(prefix+":"+slpAddrStr, &chaincfg.MainNetParams)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if addr.String() != slpAddrStr {
+		t.Fatal("decode failed")
+	}
+}
+
 func TestDecodeAddressSlpMainnetUpperCase(t *testing.T) {
 	slpAddrStr := "QRKJTY23A5YL7VCVCNYH4DPNXXZUZS4LZQVESP65YQ"
 	addr, err := bchutil.DecodeAddress(slpAddrStr, &chaincfg.MainNetParams)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if addr.String() != strings.ToLower(slpAddrStr) {
+		t.Fatal("decode failed")
+	}
+}
+
+func TestDecodeAddressSlpMainnetWithPrefixUpper(t *testing.T) {
+	prefix := "SIMPLELEDGER"
+	slpAddrStr := "QRKJTY23A5YL7VCVCNYH4DPNXXZUZS4LZQVESP65YQ"
+	addr, err := bchutil.DecodeAddress(prefix+":"+slpAddrStr, &chaincfg.MainNetParams)
 	if err != nil {
 		t.Fatal(err)
 	}
