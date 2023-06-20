@@ -5,6 +5,7 @@
 package bchutil
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"strings"
@@ -106,6 +107,13 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 			default:
 				return nil, ErrUnknownAddressType
 			}
+		case sha256.Size: // P2SH32
+			switch typ {
+			case AddrTypePayToScriptHash32:
+				return newAddressScriptHash32FromHash(decoded, defaultNet)
+			default:
+				return nil, ErrUnknownAddressType
+			}
 		default:
 			return nil, errors.New("decoded address is of unknown size")
 		}
@@ -127,6 +135,13 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 					return NewSlpAddressPubKeyHash(decoded, defaultNet)
 				case AddrTypePayToScriptHash:
 					return NewSlpAddressScriptHashFromHash(decoded, defaultNet)
+				default:
+					return nil, ErrUnknownAddressType
+				}
+			case sha256.Size: // P2SH32
+				switch typ {
+				case AddrTypePayToScriptHash32:
+					return NewSlpAddressScriptHash32FromHash(decoded, defaultNet)
 				default:
 					return nil, ErrUnknownAddressType
 				}
@@ -179,6 +194,7 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 	}
 }
 
+//TODO add p2sh32?
 // ConvertSlpToCashAddress converts an slp formatted address to cash formatted address
 func ConvertSlpToCashAddress(addr Address, params *chaincfg.Params) (Address, error) {
 	switch a := addr.(type) {
@@ -194,6 +210,7 @@ func ConvertSlpToCashAddress(addr Address, params *chaincfg.Params) (Address, er
 	}
 }
 
+//TODO add p2sh32?
 // ConvertCashToSlpAddress converts a cash formatted address to slp formatted address
 func ConvertCashToSlpAddress(addr Address, params *chaincfg.Params) (Address, error) {
 	switch a := addr.(type) {
@@ -369,6 +386,82 @@ func (a *AddressScriptHash) String() string {
 // when an array is more appropiate than a slice (for example, when used as map
 // keys).
 func (a *AddressScriptHash) Hash160() *[ripemd160.Size]byte {
+	return &a.hash
+}
+
+// AddressScriptHash32 is an Address for a pay-to-script-hash32 (P2SH32)
+// transaction.
+type AddressScriptHash32 struct {
+	hash   [sha256.Size]byte
+	prefix string
+}
+
+// NewAddressScriptHash32 returns a new AddressScriptHash32.
+func NewAddressScriptHash32(serializedScript []byte, net *chaincfg.Params) (*AddressScriptHash32, error) {
+	scriptHash := Hash256(serializedScript)
+	return newAddressScriptHash32FromHash(scriptHash, net)
+}
+
+// NewAddressScriptHash32FromHash returns a new AddressScriptHash32.  scriptHash
+// must be 32 bytes.
+func NewAddressScriptHash32FromHash(scriptHash []byte, net *chaincfg.Params) (*AddressScriptHash32, error) {
+	return newAddressScriptHash32FromHash(scriptHash, net)
+}
+
+// NewSlpAddressScriptHash32FromHash returns a new Slp formatted AddressScriptHash32.
+func NewSlpAddressScriptHash32FromHash(scriptHash []byte, net *chaincfg.Params) (*AddressScriptHash32, error) {
+	addr, err := newAddressScriptHash32FromHash(scriptHash, net)
+	if addr != nil {
+		addr.prefix = net.SlpAddressPrefix
+	}
+	return addr, err
+}
+
+// newAddressScriptHash32FromHash is the internal API to create a script hash
+// address with a known leading identifier byte for a network, rather than
+// looking it up through its parameters.  This is useful when creating a new
+// address structure from a string encoding where the identifer byte is already
+// known.
+func newAddressScriptHash32FromHash(scriptHash []byte, net *chaincfg.Params) (*AddressScriptHash32, error) {
+	// Check for a valid script hash length.
+	if len(scriptHash) != sha256.Size {
+		return nil, errors.New("scriptHash must be 32 bytes")
+	}
+
+	addr := &AddressScriptHash32{prefix: net.CashAddressPrefix}
+	copy(addr.hash[:], scriptHash)
+	return addr, nil
+}
+
+// EncodeAddress returns the string encoding of a pay-to-script-hash
+// address.  Part of the Address interface.
+func (a *AddressScriptHash32) EncodeAddress() string {
+	return encodeCashAddress(a.hash[:], a.prefix, AddrTypePayToScriptHash) // TODO TODO
+}
+
+// ScriptAddress returns the bytes to be included in a txout script to pay
+// to a script hash.  Part of the Address interface.
+func (a *AddressScriptHash32) ScriptAddress() []byte {
+	return a.hash[:]
+}
+
+// IsForNet returns whether or not the pay-to-script-hash address is associated
+// with the passed bitcoin cash network.
+func (a *AddressScriptHash32) IsForNet(net *chaincfg.Params) bool {
+	return net.CashAddressPrefix == a.prefix
+}
+
+// String returns a human-readable string for the pay-to-script-hash address.
+// This is equivalent to calling EncodeAddress, but is provided so the type can
+// be used as a fmt.Stringer.
+func (a *AddressScriptHash32) String() string {
+	return a.EncodeAddress()
+}
+
+// Hash160 returns the underlying array of the script hash.  This can be useful
+// when an array is more appropiate than a slice (for example, when used as map
+// keys).
+func (a *AddressScriptHash32) Hash256() *[sha256.Size]byte {
 	return &a.hash
 }
 
@@ -691,6 +784,10 @@ const (
 	// AddrTypePayToScriptHash is the numeric identifier for
 	// a cashaddr PayToPubkeyHash address
 	AddrTypePayToScriptHash AddressType = 1
+
+	// AddrTypePayToScriptHash32 is the numeric identifier for
+	// a cashaddr PayToPubkeyHash address
+	AddrTypePayToScriptHash32 AddressType = 2
 )
 
 // Charset is the base32 character set for the cashaddr.
