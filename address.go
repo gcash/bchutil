@@ -194,7 +194,7 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 	}
 }
 
-//TODO add p2sh32?
+// TODO add p2sh32?
 // ConvertSlpToCashAddress converts an slp formatted address to cash formatted address
 func ConvertSlpToCashAddress(addr Address, params *chaincfg.Params) (Address, error) {
 	switch a := addr.(type) {
@@ -210,7 +210,7 @@ func ConvertSlpToCashAddress(addr Address, params *chaincfg.Params) (Address, er
 	}
 }
 
-//TODO add p2sh32?
+// TODO add p2sh32?
 // ConvertCashToSlpAddress converts a cash formatted address to slp formatted address
 func ConvertCashToSlpAddress(addr Address, params *chaincfg.Params) (Address, error) {
 	switch a := addr.(type) {
@@ -458,7 +458,7 @@ func (a *AddressScriptHash32) String() string {
 	return a.EncodeAddress()
 }
 
-// Hash160 returns the underlying array of the script hash.  This can be useful
+// Hash256 returns the underlying array of the script hash.  This can be useful
 // when an array is more appropiate than a slice (for example, when used as map
 // keys).
 func (a *AddressScriptHash32) Hash256() *[sha256.Size]byte {
