@@ -765,7 +765,7 @@ func TestDecodeCashAddressSlpMainnet(t *testing.T) {
 	addrStr := "simpleledger:qrkjty23a5yl7vcvcnyh4dpnxxzuzs4lzqvesp65yq"
 	prefix, data, err := bchutil.DecodeCashAddress(addrStr)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	if prefix != "simpleledger" {
 		t.Fatal("decode failed")
@@ -779,7 +779,7 @@ func TestDecodeCashAddressSlpMainnetUpperCase(t *testing.T) {
 	addrStr := "SIMPLELEDGER:QRKJTY23A5YL7VCVCNYH4DPNXXZUZS4LZQVESP65YQ"
 	prefix, data, err := bchutil.DecodeCashAddress(addrStr)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	if prefix != "simpleledger" {
 		t.Fatal("decode failed")
@@ -793,7 +793,7 @@ func TestDecodeCashAddressSlpMainnetP2sh(t *testing.T) {
 	addrStr := "simpleledger:pzxvc3k38r4rq2x2asmdpnz4wk92lqazpg9jh3j0k9"
 	prefix, data, err := bchutil.DecodeCashAddress(addrStr)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	if prefix != "simpleledger" {
 		t.Fatal("decode failed")
@@ -807,7 +807,7 @@ func TestDecodeCashAddressSlpTestnet(t *testing.T) {
 	addrStr := "slptest:qq69xxsfujh45g23dv8uwfv02fj3z262cgfda57wzl"
 	prefix, data, err := bchutil.DecodeCashAddress(addrStr)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	if prefix != "slptest" {
 		t.Fatal("decode failed")
@@ -821,7 +821,7 @@ func TestDecodeCashAddressSlpTestnetP2sh(t *testing.T) {
 	addrStr := "slptest:ppmuknuf0l2z38mkdnjcv76yhaeh6fqhluv3gffh99"
 	prefix, data, err := bchutil.DecodeCashAddress(addrStr)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	if prefix != "slptest" {
 		t.Fatal("decode failed")
@@ -937,16 +937,17 @@ func TestDecodeAddressSlpTestnetP2sh(t *testing.T) {
 	}
 }
 
-func TestDecodeAddressSlpRegnet(t *testing.T) {
-	slpAddrStr := "qq69xxsfujh45g23dv8uwfv02fj3z262cgfda57wzl"
-	addr, err := bchutil.DecodeAddress(slpAddrStr, &chaincfg.RegressionNetParams)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if addr.String() != slpAddrStr {
-		t.Fatal("decode failed")
-	}
-}
+// Not enabled on Regnet, chain params are in old version of BCHD.
+// func TestDecodeAddressSlpRegnet(t *testing.T) {
+// 	slpAddrStr := "qq69xxsfujh45g23dv8uwfv02fj3z262cgfda57wzl"
+// 	addr, err := bchutil.DecodeAddress(slpAddrStr, &chaincfg.RegressionNetParams)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+// 	if addr.String() != slpAddrStr {
+// 		t.Fatal("decode failed")
+// 	}
+// }
 
 func TestConvertCashToSlpAddress(t *testing.T) {
 	addrStr := "qprqzzhhve7sgysgf8h29tumywnaeyqm7y6e869uc6"

@@ -118,7 +118,6 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 			return nil, errors.New("decoded address is of unknown size")
 		}
 	} else if err == ErrChecksumMismatch || prefix == slpPrefix {
-
 		// try to decode with slp prefix instead
 		addrWithPrefix := addr
 		if !strings.EqualFold(addr[:len(bchPrefix)+1], bchPrefix+":") && !strings.EqualFold(addr[:len(slpPrefix)+1], slpPrefix+":") {

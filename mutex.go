@@ -1,3 +1,4 @@
+//go:build !mutexlog
 // +build !mutexlog
 
 package bchutil
