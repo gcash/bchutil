@@ -1,7 +1,7 @@
 bech32
 ==========
 
-[![Build Status](https://travis-ci.org/gcash/bchutil.svg?branch=master)](https://travis-ci.org/gcash/bchutil)
+![Build Status](https://github.com/gcash/bchutil/actions/workflows/main.yml/badge.svg?branch=master)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
 [![GoDoc](https://godoc.org/github.com/gcash/bchutil/bech32?status.png)](http://godoc.org/github.com/gcash/bchutil/bech32)
 

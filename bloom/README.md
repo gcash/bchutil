@@ -1,7 +1,7 @@
 bloom
 =====
 
-[![Build Status](https://travis-ci.org/gcash/bchutil.svg?branch=master)](https://travis-ci.org/gcash/bchutil)
+![Build Status](https://github.com/gcash/bchutil/actions/workflows/main.yml/badge.svg?branch=master)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
 [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/gcash/bchutil/bloom)
 
@@ -20,7 +20,7 @@ $ go get -u github.com/gcash/bchutil/bloom
 
 ## Examples
 
-* [NewFilter Example](http://godoc.org/github.com/gcash/bchutil/bloom#example-NewFilter)  
+* [NewFilter Example](http://godoc.org/github.com/gcash/bchutil/bloom#example-NewFilter)
   Demonstrates how to create a new bloom filter, add a transaction hash to it,
   and check if the filter matches the transaction.
 

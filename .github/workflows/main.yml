@@ -1,4 +1,4 @@
-name: bchutil Linter
+name: build
 on:
   push:
     branches:
