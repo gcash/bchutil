@@ -1,0 +1,31 @@
+name: bchutil Linter
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ["1.23.4"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Install golangci-lint
+        run: >-
+          curl -sfL
+          https://install.goreleaser.com/github.com/golangci/golangci-lint.sh |
+          sh -s -- -b $(go env GOPATH)/bin v1.17.1
+        env:
+          GO111MODULE: on
+      - name: Run goclean.sh
+        run: ./goclean.sh
+        env:
+          GO111MODULE: on
