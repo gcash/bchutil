@@ -1081,3 +1081,21 @@ func TestP2SH32CashAddreTestVectors(t *testing.T) {
 		}
 	}
 }
+
+var invalidAddreTestVectors = []string{
+	"bitcoincash:prseh0a4aejjcewhc665wjqhppgwrz2lw5txgn676a",
+	"bitcoincash:rrseh0a4aejjcewhc665wjqhppgwrz2lw5vVmd5u9w",
+	"bitcoincash:izltaslh7xnrsxeqm7qtvh0v53n3gfk0v5wwf6d7j4",
+	"bitcoincash:pvqqqqqqqqqqqqqqqqqqqqqqqqqqqqzg69v7ysqqqqqqqqqqqqqqqqqqqqqpkp7fqn0",
+	"bitcoincash:rv0qqqqqqqqqqqqqqqqqqqqqqzg69v7ysqqqqqqqqqqqqqqqqqqqqqn9alsp2y",
+}
+
+func TestInvalidCashAddressTestVectors(t *testing.T) {
+	for _, s := range invalidAddreTestVectors {
+		params := &chaincfg.MainNetParams
+		_, err := bchutil.DecodeAddress(s, params)
+		if err == nil {
+			t.Fatal("")
+		}
+	}
+}
