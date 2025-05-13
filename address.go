@@ -100,16 +100,16 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 		switch len(decoded) {
 		case ripemd160.Size: // P2PKH or P2SH
 			switch typ {
-			case AddrTypePayToPubKeyHash:
+			case AddrTypePayToPubKeyHash, AddrTypeTokenPayToPubKeyHash:
 				return newAddressPubKeyHash(decoded, defaultNet)
-			case AddrTypePayToScriptHash:
+			case AddrTypePayToScriptHash, AddrTypeTokenPayToScriptHash:
 				return newAddressScriptHashFromHash(decoded, defaultNet)
 			default:
 				return nil, ErrUnknownAddressType
 			}
 		case sha256.Size: // P2SH32
 			switch typ {
-			case AddrTypePayToScriptHash32:
+			case AddrTypePayToScriptHash, AddrTypeTokenPayToScriptHash:
 				return newAddressScriptHash32FromHash(decoded, defaultNet)
 			default:
 				return nil, ErrUnknownAddressType
@@ -139,7 +139,7 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 				}
 			case sha256.Size: // P2SH32
 				switch typ {
-				case AddrTypePayToScriptHash32:
+				case AddrTypeTokenPayToScriptHash:
 					return NewSlpAddressScriptHash32FromHash(decoded, defaultNet)
 				default:
 					return nil, ErrUnknownAddressType
@@ -759,16 +759,21 @@ func checkDecodeCashAddress(input string) (result []byte, prefix string, t Addre
 	if err != nil {
 		return data, prefix, AddrTypePayToPubKeyHash, err
 	}
-	if len(data) != 21 {
+	if len(data) != 21 && len(data) != 33 { // version byte + ripemd160.Size or sha256.Size
 		return data, prefix, AddrTypePayToPubKeyHash, errors.New("incorrect data length")
 	}
-	switch data[0] {
-	case 0x00:
+
+	switch data[0] >> 3 { // bits 1 to 4 are the address type.
+	case 0:
 		t = AddrTypePayToPubKeyHash
-	case 0x08:
+	case 1:
 		t = AddrTypePayToScriptHash
+	case 2:
+		t = AddrTypeTokenPayToPubKeyHash
+	case 3:
+		t = AddrTypeTokenPayToScriptHash
 	}
-	return data[1:21], prefix, t, nil
+	return data[1:], prefix, t, nil
 }
 
 // AddressType represents the type of address and is used
@@ -784,9 +789,13 @@ const (
 	// a cashaddr PayToPubkeyHash address
 	AddrTypePayToScriptHash AddressType = 1
 
-	// AddrTypePayToScriptHash32 is the numeric identifier for
-	// a cashaddr PayToPubkeyHash address
-	AddrTypePayToScriptHash32 AddressType = 2
+	// AddrTypePayToScriptHash is the numeric identifier for
+	// a token aware cashaddr PayToPubkeyHash address
+	AddrTypeTokenPayToPubKeyHash AddressType = 2
+
+	// AddrTypeTokenPayToScriptHash is the numeric identifier for
+	// a token aware cashaddr PayToPubkeyHash address
+	AddrTypeTokenPayToScriptHash AddressType = 3
 )
 
 // Charset is the base32 character set for the cashaddr.

@@ -1017,3 +1017,85 @@ func TestConvertSlpToCashAddressP2sh(t *testing.T) {
 		t.Fatal("incorrect conversion")
 	}
 }
+
+// Source: https://github.com/cashtokens/cashtokens/blob/master/test-vectors/cashaddr.json
+var p2SH32CashAddreTestVectors = []string{
+	"bitcoincash:qr6m7j9njldwwzlg9v7v53unlr4jkmx6eylep8ekg2",
+	"bitcoincash:zr6m7j9njldwwzlg9v7v53unlr4jkmx6eycnjehshe",
+	"bchtest:pr6m7j9njldwwzlg9v7v53unlr4jkmx6eyvwc0uz5t",
+	"pref:pr6m7j9njldwwzlg9v7v53unlr4jkmx6ey65nvtks5",
+	"bitcoincash:qr7fzmep8g7h7ymfxy74lgc0v950j3r2959lhtxxsl",
+	"bitcoincash:zr7fzmep8g7h7ymfxy74lgc0v950j3r295z4y4gq0v",
+	"bchtest:qr7fzmep8g7h7ymfxy74lgc0v950j3r295pdnvy3hr",
+	"bchtest:zr7fzmep8g7h7ymfxy74lgc0v950j3r295x8qj2hgs",
+	"bchreg:qr7fzmep8g7h7ymfxy74lgc0v950j3r295m39d8z59",
+	"bchreg:zr7fzmep8g7h7ymfxy74lgc0v950j3r295umknfytk",
+	"prefix:qr7fzmep8g7h7ymfxy74lgc0v950j3r295fu6e430r",
+	"prefix:zr7fzmep8g7h7ymfxy74lgc0v950j3r295wkf8mhss",
+	"bitcoincash:qpagr634w55t4wp56ftxx53xukhqgl24yse53qxdge",
+	"bitcoincash:zpagr634w55t4wp56ftxx53xukhqgl24ys77z7gth2",
+	"bitcoincash:qq9l9e2dgkx0hp43qm3c3h252e9euugrfc6vlt3r9e",
+	"bitcoincash:zq9l9e2dgkx0hp43qm3c3h252e9euugrfcaxv4l962",
+	"bitcoincash:qre24q38ghy6k3pegpyvtxahu8q8hqmxmqqn28z85p",
+	"bitcoincash:zre24q38ghy6k3pegpyvtxahu8q8hqmxmq8eeevptj",
+	"bitcoincash:qz7xc0vl85nck65ffrsx5wvewjznp9lflgktxc5878",
+	"bitcoincash:zz7xc0vl85nck65ffrsx5wvewjznp9lflg3p4x6pp5",
+	"bitcoincash:ppawqn2h74a4t50phuza84kdp3794pq3ccvm92p8sh",
+	"bitcoincash:rpawqn2h74a4t50phuza84kdp3794pq3cct3k50p0y",
+	"bitcoincash:pqv53dwyatxse2xh7nnlqhyr6ryjgfdtagkd4vc388",
+	"bitcoincash:rqv53dwyatxse2xh7nnlqhyr6ryjgfdtag38xjkhc5",
+	"bitcoincash:prseh0a4aejjcewhc665wjqhppgwrz2lw5txgn666a",
+	"bitcoincash:rrseh0a4aejjcewhc665wjqhppgwrz2lw5vvmd5u9w",
+	"bitcoincash:pzltaslh7xnrsxeqm7qtvh0v53n3gfk0v5wwf6d7j4",
+	"bitcoincash:rzltaslh7xnrsxeqm7qtvh0v53n3gfk0v5fy6yrcdx",
+	"bitcoincash:pvqqqqqqqqqqqqqqqqqqqqqqzg69v7ysqqqqqqqqqqqqqqqqqqqqqpkp7fqn0",
+	"bitcoincash:rvqqqqqqqqqqqqqqqqqqqqqqzg69v7ysqqqqqqqqqqqqqqqqqqqqqn9alsp2y",
+	"bitcoincash:pdzyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3jh2p5nn",
+	"bitcoincash:rdzyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygrpttc42c",
+	"bitcoincash:pwyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygsh3sujgcr",
+	"bitcoincash:rwyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygs9zvatfpg",
+	"bitcoincash:p0xvenxvenxvenxvenxvenxvenxvenxvenxvenxvenxvenxvenxvcm6gz4t77",
+	"bitcoincash:r0xvenxvenxvenxvenxvenxvenxvenxvenxvenxvenxvenxvenxvcff5rv284",
+	"bitcoincash:p0llllllllllllllllllllllllllllllllllllllllllllllllll7x3vthu35",
+	"bitcoincash:r0llllllllllllllllllllllllllllllllllllllllllllllllll75zs2wagl",
+	"bchtest:pvch8mmxy0rtfrlarg7ucrxxfzds5pamg73h7370aa87d80gyhqxq7fqng6m6",
+	"pref:pvch8mmxy0rtfrlarg7ucrxxfzds5pamg73h7370aa87d80gyhqxq4k9m7qf9",
+}
+
+func TestP2SH32CashAddreTestVectors(t *testing.T) {
+	for _, s := range p2SH32CashAddreTestVectors {
+		result := strings.Split(s, ":")
+		params := &chaincfg.MainNetParams
+		switch result[0] {
+		case "bchtest":
+			params = &chaincfg.TestNet4Params
+		case "bchreg":
+			params = &chaincfg.RegressionNetParams
+		case "prefix", "pref":
+			continue
+
+		}
+		_, err := bchutil.DecodeAddress(s, params)
+		if err != nil {
+			t.Error(err)
+		}
+	}
+}
+
+var invalidAddreTestVectors = []string{
+	"bitcoincash:prseh0a4aejjcewhc665wjqhppgwrz2lw5txgn676a",
+	"bitcoincash:rrseh0a4aejjcewhc665wjqhppgwrz2lw5vVmd5u9w",
+	"bitcoincash:izltaslh7xnrsxeqm7qtvh0v53n3gfk0v5wwf6d7j4",
+	"bitcoincash:pvqqqqqqqqqqqqqqqqqqqqqqqqqqqqzg69v7ysqqqqqqqqqqqqqqqqqqqqqpkp7fqn0",
+	"bitcoincash:rv0qqqqqqqqqqqqqqqqqqqqqqzg69v7ysqqqqqqqqqqqqqqqqqqqqqn9alsp2y",
+}
+
+func TestInvalidCashAddressTestVectors(t *testing.T) {
+	for _, s := range invalidAddreTestVectors {
+		params := &chaincfg.MainNetParams
+		_, err := bchutil.DecodeAddress(s, params)
+		if err == nil {
+			t.Fatalf("Failed to error on invalid address string: %s", s)
+		}
+	}
+}
