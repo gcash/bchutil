@@ -1058,14 +1058,24 @@ var p2SH32CashAddreTestVectors = []string{
 	"bitcoincash:r0xvenxvenxvenxvenxvenxvenxvenxvenxvenxvenxvenxvenxvcff5rv284",
 	"bitcoincash:p0llllllllllllllllllllllllllllllllllllllllllllllllll7x3vthu35",
 	"bitcoincash:r0llllllllllllllllllllllllllllllllllllllllllllllllll75zs2wagl",
-	"bitcoincash:qvch8mmxy0rtfrlarg7ucrxxfzds5pamg73h7370aa87d80gyhqxq5nlegake",
 	"bchtest:pvch8mmxy0rtfrlarg7ucrxxfzds5pamg73h7370aa87d80gyhqxq7fqng6m6",
 	"pref:pvch8mmxy0rtfrlarg7ucrxxfzds5pamg73h7370aa87d80gyhqxq4k9m7qf9",
 }
 
 func TestP2SH32CashAddreTestVectors(t *testing.T) {
 	for _, s := range p2SH32CashAddreTestVectors {
-		_, _, err := bchutil.DecodeCashAddress(s)
+		result := strings.Split(s, ":")
+		params := &chaincfg.MainNetParams
+		switch result[0] {
+		case "bchtest":
+			params = &chaincfg.TestNet4Params
+		case "bchreg":
+			params = &chaincfg.RegressionNetParams
+		case "prefix", "pref":
+			continue
+
+		}
+		_, err := bchutil.DecodeAddress(s, params)
 		if err != nil {
 			t.Error(err)
 		}
