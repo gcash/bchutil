@@ -1095,7 +1095,7 @@ func TestInvalidCashAddressTestVectors(t *testing.T) {
 		params := &chaincfg.MainNetParams
 		_, err := bchutil.DecodeAddress(s, params)
 		if err == nil {
-			t.Fatal("")
+			t.Fatalf("Failed to error on invalid address string: %s", s)
 		}
 	}
 }
