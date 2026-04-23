@@ -17,7 +17,7 @@ import (
 	"github.com/gcash/bchd/bchec"
 	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchutil/base58"
-	"golang.org/x/crypto/ripemd160"
+	"golang.org/x/crypto/ripemd160" //nolint:staticcheck // RIPEMD-160 is required by the Bitcoin protocol
 )
 
 // SetBlockBytes sets the internal serialized block byte buffer to the passed

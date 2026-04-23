@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"github.com/gcash/bchd/chaincfg/chainhash"
-	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/proto" //nolint:staticcheck // OpenBazaar jsonpb API uses github.com/golang/protobuf's proto.Message
 	"io"
 
 	// The OpenBazaar fork of this package better handles large integers. Normally

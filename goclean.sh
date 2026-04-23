@@ -17,9 +17,5 @@ if [ ! -x "$(type -p golangci-lint)" ]; then
 fi
 
 # Automatic checks
-test -z "$(golangci-lint run --disable-all \
---enable=gofmt \
---enable=govet \
---enable=gosimple \
---enable=unconvert | grep -v 'ALL_CAPS\|OP_' 2>&1 | tee /dev/stderr)"
+env GO111MODULE=on golangci-lint run
 go test ./...

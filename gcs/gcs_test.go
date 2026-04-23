@@ -27,7 +27,7 @@ var (
 	// Filters are conserved between tests but we must define with an
 	// interface which functions we're testing because the gcsFilter type
 	// isn't exported
-	filter, filter2, filter3, filter4, filter5 *gcs.Filter
+	filter, filter2, filter3 *gcs.Filter
 
 	// We need to use the same key for building and querying the filters
 	key [gcs.KeySize]byte

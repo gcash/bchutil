@@ -14,7 +14,7 @@ import (
 
 	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchutil"
-	"golang.org/x/crypto/ripemd160"
+	"golang.org/x/crypto/ripemd160" //nolint:staticcheck // RIPEMD-160 is required by the Bitcoin protocol
 )
 
 func TestAddresses(t *testing.T) {

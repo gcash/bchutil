@@ -19,9 +19,6 @@ import (
 )
 
 var (
-	// No need to allocate an err variable in every test
-	err error
-
 	// List of values for building a filter
 	contents = [][]byte{
 		[]byte("Alex"),
@@ -259,7 +256,9 @@ func TestBuildBasicFilter(t *testing.T) {
 
 	// Test coinbase
 	var buf bytes.Buffer
-	TestBlock.Transactions[0].TxIn[0].PreviousOutPoint.Serialize(&buf)
+	if err := TestBlock.Transactions[0].TxIn[0].PreviousOutPoint.Serialize(&buf); err != nil {
+		t.Fatal(err)
+	}
 	matches, err := filter.Match(key, buf.Bytes())
 	if err != nil {
 		t.Fatal(err)
@@ -288,7 +287,9 @@ func TestBuildBasicFilter(t *testing.T) {
 	for i, tx := range TestBlock.Transactions[1:] {
 		for x, in := range tx.TxIn {
 			var buf bytes.Buffer
-			in.PreviousOutPoint.Serialize(&buf)
+			if err := in.PreviousOutPoint.Serialize(&buf); err != nil {
+				t.Fatal(err)
+			}
 			matches, err := filter.Match(key, buf.Bytes())
 			if err != nil {
 				t.Fatal(err)

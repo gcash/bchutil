@@ -13,7 +13,7 @@ import (
 	"github.com/gcash/bchd/bchec"
 	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchutil/base58"
-	"golang.org/x/crypto/ripemd160"
+	"golang.org/x/crypto/ripemd160" //nolint:staticcheck // RIPEMD-160 is required by the Bitcoin protocol
 )
 
 var (
@@ -126,7 +126,8 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 
 		// Switch on decoded length to determine the type.
 		decoded, _, typ, err := checkDecodeCashAddress(addrWithPrefix)
-		if err == nil {
+		switch err {
+		case nil:
 			switch len(decoded) {
 			case ripemd160.Size: // P2PKH or P2SH
 				switch typ {
@@ -147,7 +148,7 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 			default:
 				return nil, errors.New("decoded address is of unknown size")
 			}
-		} else if err == ErrChecksumMismatch {
+		case ErrChecksumMismatch:
 			cashaddrErr = ErrChecksumMismatch
 		}
 	}
@@ -1097,7 +1098,7 @@ func packAddressData(addrType AddressType, addrHash []byte) ([]byte, error) {
 	if (len(addrHash)-20)%4 != 0 {
 		return nil, errors.New("invalid address hash size")
 	}
-	if encodedSize < 0 || encodedSize > 8 {
+	if encodedSize > 8 {
 		return nil, errors.New("encoded size out of valid range")
 	}
 	versionByte |= encodedSize

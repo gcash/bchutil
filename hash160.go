@@ -8,7 +8,7 @@ import (
 	"crypto/sha256"
 	"hash"
 
-	"golang.org/x/crypto/ripemd160"
+	"golang.org/x/crypto/ripemd160" //nolint:staticcheck // RIPEMD-160 is required by the Bitcoin protocol
 )
 
 // Calculate the hash of hasher over buf.

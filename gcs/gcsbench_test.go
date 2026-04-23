@@ -13,11 +13,13 @@ import (
 	"github.com/gcash/bchutil/gcs"
 )
 
+var benchRand = rand.New(rand.NewSource(1))
+
 func genRandFilterElements(numElements uint) ([][]byte, error) {
 	testContents := make([][]byte, numElements)
 	for i := range testContents {
 		randElem := make([]byte, 32)
-		if _, err := rand.Read(randElem); err != nil {
+		if _, err := benchRand.Read(randElem); err != nil {
 			return nil, err
 		}
 		testContents[i] = randElem
@@ -28,7 +30,6 @@ func genRandFilterElements(numElements uint) ([][]byte, error) {
 
 var (
 	generatedFilter *gcs.Filter
-	filterErr       error
 )
 
 // BenchmarkGCSFilterBuild benchmarks building a filter.
@@ -101,7 +102,7 @@ func BenchmarkGCSFilterMatch(b *testing.B) {
 
 	var localMatch bool
 	for i := 0; i < b.N; i++ {
-		localMatch, err = filter.Match(key, []byte("Nate"))
+		_, err = filter.Match(key, []byte("Nate"))
 		if err != nil {
 			b.Fatalf("unable to match filter: %v", err)
 		}
@@ -115,8 +116,6 @@ func BenchmarkGCSFilterMatch(b *testing.B) {
 }
 
 var (
-	randElems1, _        = genRandFilterElements(1)
-	randElems10, _       = genRandFilterElements(10)
 	randElems100, _      = genRandFilterElements(100)
 	randElems1000, _     = genRandFilterElements(1000)
 	randElems10000, _    = genRandFilterElements(10000)

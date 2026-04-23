@@ -33,7 +33,7 @@ func (c *TestCoin) ValueAge() int64       { return int64(c.TxValue) * c.TxNumCon
 
 func NewCoin(index int64, value bchutil.Amount, numConfs int64) coinset.Coin {
 	h := sha256.New()
-	h.Write([]byte(fmt.Sprintf("%d", index)))
+	_, _ = fmt.Fprintf(h, "%d", index)
 	hash, _ := chainhash.NewHash(h.Sum(nil))
 	c := &TestCoin{
 		TxHash:     hash,

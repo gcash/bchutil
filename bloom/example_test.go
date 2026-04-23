@@ -7,7 +7,6 @@ package bloom_test
 import (
 	"fmt"
 	"math/rand"
-	"time"
 
 	"github.com/gcash/bchd/chaincfg/chainhash"
 	"github.com/gcash/bchd/wire"
@@ -17,7 +16,6 @@ import (
 // This example demonstrates how to create a new bloom filter, add a transaction
 // hash to it, and check if the filter matches the transaction.
 func ExampleNewFilter() {
-	rand.Seed(time.Now().UnixNano())
 	tweak := rand.Uint32()
 
 	// Create a new bloom filter intended to hold 10 elements with a 0.01%
