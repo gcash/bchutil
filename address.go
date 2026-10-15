@@ -615,6 +615,7 @@ type AddressPubKey struct {
 	pubKeyFormat PubKeyFormat
 	pubKey       *bchec.PublicKey
 	pubKeyHashID byte
+	prefix       string
 }
 
 // NewAddressPubKey returns a new AddressPubKey which represents a pay-to-pubkey
@@ -642,6 +643,7 @@ func NewAddressPubKey(serializedPubKey []byte, net *chaincfg.Params) (*AddressPu
 		pubKeyFormat: pkFormat,
 		pubKey:       pubKey,
 		pubKeyHashID: net.LegacyPubKeyHashAddrID,
+		prefix:       net.CashAddressPrefix,
 	}, nil
 }
 
@@ -712,8 +714,7 @@ func (a *AddressPubKey) SetFormat(pkFormat PubKeyFormat) {
 // differs with the format.  At the time of this writing, most Bitcoin addresses
 // are pay-to-pubkey-hash constructed from the uncompressed public key.
 func (a *AddressPubKey) AddressPubKeyHash() *AddressPubKeyHash {
-	params := paramsFromNetID(a.pubKeyHashID)
-	addr := &AddressPubKeyHash{prefix: params.CashAddressPrefix}
+	addr := &AddressPubKeyHash{prefix: a.prefix}
 	copy(addr.hash[:], Hash160(a.serialize()))
 	return addr
 }
@@ -721,25 +722,6 @@ func (a *AddressPubKey) AddressPubKeyHash() *AddressPubKeyHash {
 // PubKey returns the underlying public key for the address.
 func (a *AddressPubKey) PubKey() *bchec.PublicKey {
 	return a.pubKey
-}
-
-func paramsFromNetID(netID byte) *chaincfg.Params {
-	switch netID {
-	case chaincfg.TestNet3Params.LegacyPubKeyHashAddrID:
-		return &chaincfg.TestNet3Params
-	case chaincfg.RegressionNetParams.LegacyPubKeyHashAddrID:
-		return &chaincfg.RegressionNetParams
-	case chaincfg.SimNetParams.LegacyPubKeyHashAddrID:
-		return &chaincfg.SimNetParams
-	case chaincfg.TestNet3Params.LegacyScriptHashAddrID:
-		return &chaincfg.TestNet3Params
-	case chaincfg.RegressionNetParams.LegacyScriptHashAddrID:
-		return &chaincfg.RegressionNetParams
-	case chaincfg.SimNetParams.LegacyScriptHashAddrID:
-		return &chaincfg.SimNetParams
-	default:
-		return &chaincfg.MainNetParams
-	}
 }
 
 func checkEncodeCashAddress(input []byte, prefix string, t AddressType) string {
