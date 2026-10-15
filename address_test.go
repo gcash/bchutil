@@ -1088,6 +1088,14 @@ var invalidAddreTestVectors = []string{
 	"bitcoincash:izltaslh7xnrsxeqm7qtvh0v53n3gfk0v5wwf6d7j4",
 	"bitcoincash:pvqqqqqqqqqqqqqqqqqqqqqqqqqqqqzg69v7ysqqqqqqqqqqqqqqqqqqqqqpkp7fqn0",
 	"bitcoincash:rv0qqqqqqqqqqqqqqqqqqqqqqzg69v7ysqqqqqqqqqqqqqqqqqqqqqn9alsp2y",
+	// Unknown address types and a set reserved bit.
+	"bitcoincash:yqg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyh9emrntk",
+	"bitcoincash:0qg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zymtffmwgx",
+	"bitcoincash:sqg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygnrg5xjv",
+	// Hash sizes that don't match the version byte.
+	"bitcoincash:qvg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygnepkvje",
+	"bitcoincash:pvg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zylkyw30fy",
+	"bitcoincash:pqg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3ztlnkm4pv",
 }
 
 func TestInvalidCashAddressTestVectors(t *testing.T) {
@@ -1095,7 +1103,7 @@ func TestInvalidCashAddressTestVectors(t *testing.T) {
 		params := &chaincfg.MainNetParams
 		_, err := bchutil.DecodeAddress(s, params)
 		if err == nil {
-			t.Fatalf("Failed to error on invalid address string: %s", s)
+			t.Errorf("Failed to error on invalid address string: %s", s)
 		}
 	}
 }
