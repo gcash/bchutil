@@ -1075,9 +1075,15 @@ func TestP2SH32CashAddreTestVectors(t *testing.T) {
 			continue
 
 		}
-		_, err := bchutil.DecodeAddress(s, params)
+		addr, err := bchutil.DecodeAddress(s, params)
 		if err != nil {
 			t.Error(err)
+			continue
+		}
+
+		// Token-aware addresses are re-encoded without the token flag.
+		if result[1][0] == 'p' && addr.EncodeAddress() != result[1] {
+			t.Errorf("%s: re-encoded as %s", s, addr.EncodeAddress())
 		}
 	}
 }
@@ -1097,5 +1103,24 @@ func TestInvalidCashAddressTestVectors(t *testing.T) {
 		if err == nil {
 			t.Fatalf("Failed to error on invalid address string: %s", s)
 		}
+	}
+}
+
+// TestSlpP2SH32RoundTrip ensures an SLP P2SH32 address decodes to the address
+// it was encoded from.
+func TestSlpP2SH32RoundTrip(t *testing.T) {
+	hash := bytes.Repeat([]byte{0x11}, 32)
+	addr, err := bchutil.NewSlpAddressScriptHash32FromHash(hash,
+		&chaincfg.MainNetParams)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoded, err := bchutil.DecodeAddress("simpleledger:"+addr.EncodeAddress(),
+		&chaincfg.MainNetParams)
+	if err != nil {
+		t.Fatalf("unable to decode %s: %v", addr, err)
+	}
+	if !reflect.DeepEqual(decoded, addr) {
+		t.Errorf("decoded %v, want %v", decoded, addr)
 	}
 }

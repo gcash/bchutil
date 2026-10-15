@@ -140,7 +140,7 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 				}
 			case sha256.Size: // P2SH32
 				switch typ {
-				case AddrTypeTokenPayToScriptHash:
+				case AddrTypePayToScriptHash, AddrTypeTokenPayToScriptHash:
 					return NewSlpAddressScriptHash32FromHash(decoded, defaultNet)
 				default:
 					return nil, ErrUnknownAddressType
@@ -436,7 +436,7 @@ func newAddressScriptHash32FromHash(scriptHash []byte, net *chaincfg.Params) (*A
 // EncodeAddress returns the string encoding of a pay-to-script-hash
 // address.  Part of the Address interface.
 func (a *AddressScriptHash32) EncodeAddress() string {
-	return encodeCashAddress(a.hash[:], a.prefix, AddrTypePayToScriptHash) // TODO TODO
+	return checkEncodeCashAddress(a.hash[:], a.prefix, AddrTypePayToScriptHash)
 }
 
 // ScriptAddress returns the bytes to be included in a txout script to pay
