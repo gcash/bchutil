@@ -89,7 +89,7 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 	// Add prefix if it does not exist, and try bch prefix first
 	addrWithPrefix := addr
 	if !strings.EqualFold(addr[:len(bchPrefix)+1], bchPrefix+":") && !strings.EqualFold(addr[:len(slpPrefix)+1], slpPrefix+":") {
-		addrWithPrefix = bchPrefix + ":" + strings.ToLower(addr) // so we don't mix cases
+		addrWithPrefix = addCashAddressPrefix(bchPrefix, addr)
 	}
 
 	var cashaddrErr error
@@ -121,7 +121,7 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 		// try to decode with slp prefix instead
 		addrWithPrefix := addr
 		if !strings.EqualFold(addr[:len(bchPrefix)+1], bchPrefix+":") && !strings.EqualFold(addr[:len(slpPrefix)+1], slpPrefix+":") {
-			addrWithPrefix = slpPrefix + ":" + strings.ToLower(addr) // so we don't mix cases
+			addrWithPrefix = addCashAddressPrefix(slpPrefix, addr)
 		}
 
 		// Switch on decoded length to determine the type.
@@ -192,6 +192,15 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 	default:
 		return nil, errors.New("decoded address is of unknown size")
 	}
+}
+
+// addCashAddressPrefix adds the passed prefix to a cashaddr without one, in the
+// same case as the address, so a mixed case address is still rejected.
+func addCashAddressPrefix(prefix, addr string) string {
+	if strings.ToUpper(addr) == addr {
+		prefix = strings.ToUpper(prefix)
+	}
+	return prefix + ":" + addr
 }
 
 // TODO add p2sh32?
@@ -764,7 +773,14 @@ func checkDecodeCashAddress(input string) (result []byte, prefix string, t Addre
 		return data, prefix, AddrTypePayToPubKeyHash, errors.New("incorrect data length")
 	}
 
-	switch data[0] >> 3 { // bits 1 to 4 are the address type.
+	// The top bit of the version byte is reserved and the low 3 bits are
+	// the hash size.
+	version := data[0]
+	if version&0x80 != 0 || cashAddressHashSizes[version&0x07] != len(data)-1 {
+		return data, prefix, AddrTypePayToPubKeyHash, errors.New("invalid version byte")
+	}
+
+	switch version >> 3 { // bits 1 to 4 are the address type.
 	case 0:
 		t = AddrTypePayToPubKeyHash
 	case 1:
@@ -773,9 +789,15 @@ func checkDecodeCashAddress(input string) (result []byte, prefix string, t Addre
 		t = AddrTypeTokenPayToPubKeyHash
 	case 3:
 		t = AddrTypeTokenPayToScriptHash
+	default:
+		return data, prefix, AddrTypePayToPubKeyHash, ErrUnknownAddressType
 	}
 	return data[1:], prefix, t, nil
 }
+
+// cashAddressHashSizes are the hash sizes in bytes for each size code in the
+// cashaddr version byte.
+var cashAddressHashSizes = [8]int{20, 24, 28, 32, 40, 48, 56, 64}
 
 // AddressType represents the type of address and is used
 // when encoding the cashaddr.
