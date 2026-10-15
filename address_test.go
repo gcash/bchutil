@@ -1096,6 +1096,8 @@ var invalidAddreTestVectors = []string{
 	"bitcoincash:qvg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygnepkvje",
 	"bitcoincash:pvg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zylkyw30fy",
 	"bitcoincash:pqg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3ztlnkm4pv",
+	// Mixed case without a prefix.
+	"QQG3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zye3kwllue",
 }
 
 func TestInvalidCashAddressTestVectors(t *testing.T) {

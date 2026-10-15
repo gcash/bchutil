@@ -89,7 +89,7 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 	// Add prefix if it does not exist, and try bch prefix first
 	addrWithPrefix := addr
 	if !strings.EqualFold(addr[:len(bchPrefix)+1], bchPrefix+":") && !strings.EqualFold(addr[:len(slpPrefix)+1], slpPrefix+":") {
-		addrWithPrefix = bchPrefix + ":" + strings.ToLower(addr) // so we don't mix cases
+		addrWithPrefix = addCashAddressPrefix(bchPrefix, addr)
 	}
 
 	var cashaddrErr error
@@ -121,7 +121,7 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 		// try to decode with slp prefix instead
 		addrWithPrefix := addr
 		if !strings.EqualFold(addr[:len(bchPrefix)+1], bchPrefix+":") && !strings.EqualFold(addr[:len(slpPrefix)+1], slpPrefix+":") {
-			addrWithPrefix = slpPrefix + ":" + strings.ToLower(addr) // so we don't mix cases
+			addrWithPrefix = addCashAddressPrefix(slpPrefix, addr)
 		}
 
 		// Switch on decoded length to determine the type.
@@ -192,6 +192,15 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 	default:
 		return nil, errors.New("decoded address is of unknown size")
 	}
+}
+
+// addCashAddressPrefix adds the passed prefix to a cashaddr without one, in the
+// same case as the address, so a mixed case address is still rejected.
+func addCashAddressPrefix(prefix, addr string) string {
+	if strings.ToUpper(addr) == addr {
+		prefix = strings.ToUpper(prefix)
+	}
+	return prefix + ":" + addr
 }
 
 // TODO add p2sh32?
