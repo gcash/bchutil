@@ -78,13 +78,14 @@ func TstLegacyAddressScriptHash(hash [ripemd160.Size]byte,
 // TstAddressPubKey makes an AddressPubKey, setting the unexported fields with
 // the parameters.
 func TstAddressPubKey(serializedPubKey []byte, pubKeyFormat PubKeyFormat,
-	netID byte) *AddressPubKey {
+	net *chaincfg.Params) *AddressPubKey {
 
 	pubKey, _ := bchec.ParsePubKey(serializedPubKey, bchec.S256())
 	return &AddressPubKey{
 		pubKeyFormat: pubKeyFormat,
 		pubKey:       pubKey,
-		pubKeyHashID: netID,
+		pubKeyHashID: net.LegacyPubKeyHashAddrID,
+		prefix:       net.CashAddressPrefix,
 	}
 }
 
