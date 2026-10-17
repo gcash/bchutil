@@ -284,13 +284,13 @@ func (bf *Filter) maybeAddOutpoint(pkScript []byte, outHash *chainhash.Hash, out
 	}
 }
 
-// matchTxAndUpdate returns true if the bloom filter matches data within the
-// passed transaction, otherwise false is returned.  If the filter does match
-// the passed transaction, it will also update the filter depending on the bloom
-// update flags set via the loaded filter if needed.
+// matchAndInsertOutputs returns true if the bloom filter matches the hash of
+// the passed transaction or data pushed by one of its public key scripts.
+// Each matched output is added to the filter depending on the bloom update
+// flags, so transactions spending it match too.
 //
 // This function MUST be called with the filter lock held.
-func (bf *Filter) matchTxAndUpdate(tx *bchutil.Tx) bool {
+func (bf *Filter) matchAndInsertOutputs(tx *bchutil.Tx) bool {
 	// A filter with an empty data array matches every transaction and
 	// cannot be updated, so there is nothing more to check.
 	if bf.isMatchAll() {
@@ -325,17 +325,18 @@ func (bf *Filter) matchTxAndUpdate(tx *bchutil.Tx) bool {
 			break
 		}
 	}
+	return matched
+}
 
-	// Nothing more to do if a match has already been made.
-	if matched {
+// matchInputs returns true if the bloom filter matches an outpoint the passed
+// transaction spends or data pushed by one of its signature scripts.
+//
+// This function MUST be called with the filter lock held.
+func (bf *Filter) matchInputs(tx *bchutil.Tx) bool {
+	if bf.isMatchAll() {
 		return true
 	}
 
-	// At this point, the transaction and none of the data elements in the
-	// public key scripts of its outputs matched.
-
-	// Check if the filter matches any outpoints this transaction spends or
-	// any any data elements in the signature scripts of any of the inputs.
 	for _, txin := range tx.MsgTx().TxIn {
 		if bf.matchesOutPoint(&txin.PreviousOutPoint) {
 			return true
@@ -355,16 +356,38 @@ func (bf *Filter) matchTxAndUpdate(tx *bchutil.Tx) bool {
 	return false
 }
 
+// MatchAndInsertOutputs returns true if the bloom filter matches the hash of
+// the passed transaction or data pushed by one of its public key scripts, and
+// adds the matched outputs to the filter depending on the bloom update flags.
+//
+// This function is safe for concurrent access.
+func (bf *Filter) MatchAndInsertOutputs(tx *bchutil.Tx) bool {
+	bf.mtx.Lock()
+	defer bf.mtx.Unlock()
+	return bf.matchAndInsertOutputs(tx)
+}
+
+// MatchInputs returns true if the bloom filter matches an outpoint the passed
+// transaction spends or data pushed by one of its signature scripts.
+//
+// This function is safe for concurrent access.
+func (bf *Filter) MatchInputs(tx *bchutil.Tx) bool {
+	bf.mtx.Lock()
+	defer bf.mtx.Unlock()
+	return bf.matchInputs(tx)
+}
+
 // MatchTxAndUpdate returns true if the bloom filter matches data within the
 // passed transaction, otherwise false is returned.  If the filter does match
 // the passed transaction, it will also update the filter depending on the bloom
-// update flags set via the loaded filter if needed.
+// update flags set via the loaded filter if needed.  The inputs are only
+// checked when the outputs don't match.
 //
 // This function is safe for concurrent access.
 func (bf *Filter) MatchTxAndUpdate(tx *bchutil.Tx) bool {
 	bf.mtx.Lock()
 	defer bf.mtx.Unlock()
-	return bf.matchTxAndUpdate(tx)
+	return bf.matchAndInsertOutputs(tx) || bf.matchInputs(tx)
 }
 
 // MsgFilterLoad returns the underlying wire.MsgFilterLoad for the bloom

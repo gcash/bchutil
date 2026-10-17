@@ -77,45 +77,28 @@ func (m *merkleBlock) traverseAndBuild(height, pos uint32) {
 	}
 }
 
-type blockFilterer struct {
-	filter         *Filter
-	matchedIndices map[int]bool
-}
-
-type txWithIndex struct {
-	tx    *bchutil.Tx
-	index int
-}
-
-// checkFilterTx will check if the transaction is relevant and recursively loop through the
-// inputs to double check transactions that are in the block but were already processed.
-// This is necessary if the block is not sorted in topological order.
-func (bf *blockFilterer) checkFilterTx(tx *bchutil.Tx, txIndex int, inputs map[chainhash.Hash][]*txWithIndex) {
-	if bf.filter.MatchTxAndUpdate(tx) {
-		bf.matchedIndices[txIndex] = true
-		if dependentTxs, ok := inputs[tx.MsgTx().TxHash()]; ok {
-			for _, dependentTx := range dependentTxs {
-				bf.checkFilterTx(dependentTx.tx, dependentTx.index, inputs)
-			}
-		}
-	}
-}
-
 // GetMatchedIndices returns the index of the transactions that match the filter.
 // This works even with CTOR ordering.
+//
+// Like the reference implementation, the outputs of every transaction are
+// matched first, adding matched outputs to the filter, and then the inputs of
+// the transactions that didn't match.  So a transaction spending a matched
+// output earlier in the block still matches, and each transaction is checked
+// at most twice.
 func GetMatchedIndices(block *bchutil.Block, filter *Filter) map[int]bool {
-	bf := blockFilterer{matchedIndices: make(map[int]bool), filter: filter}
-	inputs := make(map[chainhash.Hash][]*txWithIndex)
-	for txIndex, tx := range block.Transactions() {
-		for _, in := range tx.MsgTx().TxIn {
-			inputTxs := inputs[in.PreviousOutPoint.Hash]
-			inputTxs = append(inputTxs, &txWithIndex{tx, txIndex})
-			inputs[in.PreviousOutPoint.Hash] = inputTxs
+	matched := make(map[int]bool)
+	txs := block.Transactions()
+	for i, tx := range txs {
+		if filter.MatchAndInsertOutputs(tx) {
+			matched[i] = true
 		}
-
-		bf.checkFilterTx(tx, txIndex, inputs)
 	}
-	return bf.matchedIndices
+	for i, tx := range txs {
+		if !matched[i] && filter.MatchInputs(tx) {
+			matched[i] = true
+		}
+	}
+	return matched
 }
 
 // NewMerkleBlock returns a new *wire.MsgMerkleBlock and an array of the matched

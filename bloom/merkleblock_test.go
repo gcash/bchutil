@@ -7,9 +7,11 @@ package bloom_test
 import (
 	"bytes"
 	"encoding/hex"
-	"github.com/gcash/bchd/chaincfg"
+	"slices"
 	"testing"
+	"time"
 
+	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchd/chaincfg/chainhash"
 	"github.com/gcash/bchd/wire"
 	"github.com/gcash/bchutil"
@@ -104,5 +106,77 @@ func TestMerkleBlockOutOfOrder(t *testing.T) {
 	mBlock, _ := bloom.NewMerkleBlock(blk, f)
 	if mBlock.Transactions != 3 {
 		t.Fatalf("Returned incorrect number of transactions. Expected %d, got %d", 3, mBlock.Transactions)
+	}
+}
+
+// TestMerkleBlockMatchingWorkBounded ensures matching a block costs work in
+// proportion to its transactions.  The block has layers of two transactions
+// that each spend both transactions of the next layer and push the filtered
+// data, listed in reverse, so re-checking the spenders of every matched
+// transaction would take time exponential in the number of layers.  It also
+// ensures spenders listed before the transaction they spend still match.
+func TestMerkleBlockMatchingWorkBounded(t *testing.T) {
+	const layers = 40
+	item := bytes.Repeat([]byte{0xab}, 20)
+	pkScript := append([]byte{0x6a, 20}, item...)
+
+	// Build the layers from the bottom up; layer 0 spends outside coins.
+	var below [2]chainhash.Hash
+	var txs []*wire.MsgTx
+	for layer := range layers {
+		var hashes [2]chainhash.Hash
+		for j := range 2 {
+			tx := wire.NewMsgTx(1)
+			if layer == 0 {
+				prev := chainhash.Hash{byte(j + 1)}
+				tx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(&prev, 0), nil))
+			} else {
+				for k := range 2 {
+					tx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(&below[k],
+						uint32(j)), nil))
+				}
+			}
+			tx.AddTxOut(wire.NewTxOut(1, pkScript, wire.TokenData{}))
+			tx.AddTxOut(wire.NewTxOut(1, pkScript, wire.TokenData{}))
+			hashes[j] = tx.TxHash()
+			txs = append(txs, tx)
+		}
+		below = hashes
+	}
+	slices.Reverse(txs)
+	block := bchutil.NewBlock(&wire.MsgBlock{Transactions: txs})
+
+	done := make(chan []uint32, 1)
+	go func() {
+		f := bloom.NewFilter(10, 0, 0.0001, wire.BloomUpdateAll)
+		f.Add(item)
+		_, matched := bloom.NewMerkleBlock(block, f)
+		done <- matched
+	}()
+	select {
+	case matched := <-done:
+		if len(matched) != len(txs) {
+			t.Fatalf("matched %d of %d transactions", len(matched),
+				len(txs))
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("matching the block did not finish")
+	}
+
+	// A spender listed before the transaction it spends matches through
+	// the output added for the later transaction.
+	parent := wire.NewMsgTx(1)
+	parent.AddTxIn(wire.NewTxIn(wire.NewOutPoint(&chainhash.Hash{9}, 0), nil))
+	parent.AddTxOut(wire.NewTxOut(1, pkScript, wire.TokenData{}))
+	parentHash := parent.TxHash()
+	child := wire.NewMsgTx(1)
+	child.AddTxIn(wire.NewTxIn(wire.NewOutPoint(&parentHash, 0), nil))
+	child.AddTxOut(wire.NewTxOut(1, []byte{0x51}, wire.TokenData{}))
+	block = bchutil.NewBlock(&wire.MsgBlock{
+		Transactions: []*wire.MsgTx{child, parent}})
+	f := bloom.NewFilter(10, 0, 0.0001, wire.BloomUpdateAll)
+	f.Add(item)
+	if _, matched := bloom.NewMerkleBlock(block, f); len(matched) != 2 {
+		t.Fatalf("matched %v, want both transactions", matched)
 	}
 }
