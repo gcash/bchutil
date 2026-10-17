@@ -658,3 +658,52 @@ func TestFilterReload(t *testing.T) {
 		t.Errorf("TestFilterReload Reload test failed")
 	}
 }
+
+// matchTestTx returns a transaction spending prev:0 with the given output
+// scripts.
+func matchTestTx(prev chainhash.Hash, pkScripts ...[]byte) *bchutil.Tx {
+	tx := wire.NewMsgTx(1)
+	tx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(&prev, 0), nil))
+	for _, script := range pkScripts {
+		tx.AddTxOut(wire.NewTxOut(1000, script, wire.TokenData{}))
+	}
+	return bchutil.NewTx(tx)
+}
+
+// TestFilterMatchesLikeReference ensures transactions are matched against a
+// filter the way the reference implementation matches them: empty pushes
+// never match, the pushes before a malformed one in a script are still
+// matched, and the update flags are masked to their low two bits.
+func TestFilterMatchesLikeReference(t *testing.T) {
+	// An empty push never matches, even if the filter holds empty data.
+	f := bloom.NewFilter(10, 0, 0.0001, wire.BloomUpdateNone)
+	f.Add([]byte{})
+	tx := matchTestTx(chainhash.Hash{2}, []byte{0x6a, 0x00})
+	if !f.Matches(tx.Hash()[:]) && f.MatchTxAndUpdate(tx) {
+		t.Error("empty push matched")
+	}
+
+	// A push before a truncated OP_PUSHDATA1 still matches.
+	item := bytes.Repeat([]byte{0xab}, 20)
+	script := append([]byte{0x6a, 20}, item...)
+	script = append(script, 0x4c, 0x10, 0x01)
+	f = bloom.NewFilter(10, 0, 0.0001, wire.BloomUpdateNone)
+	f.Add(item)
+	if !f.MatchTxAndUpdate(matchTestTx(chainhash.Hash{3}, script)) {
+		t.Error("push before a malformed push not matched")
+	}
+
+	// Flags 0x05 mask to BloomUpdateAll, so the matched output is added.
+	item = bytes.Repeat([]byte{0xcd}, 20)
+	p2pkh := append([]byte{0x76, 0xa9, 20}, item...)
+	p2pkh = append(p2pkh, 0x88, 0xac)
+	f = bloom.NewFilter(10, 0, 0.0001, wire.BloomUpdateType(0x05))
+	f.Add(item)
+	funding := matchTestTx(chainhash.Hash{4}, p2pkh)
+	if !f.MatchTxAndUpdate(funding) {
+		t.Fatal("funding transaction not matched")
+	}
+	if !f.MatchesOutPoint(wire.NewOutPoint(funding.Hash(), 0)) {
+		t.Error("matched output not added with flags 0x05")
+	}
+}

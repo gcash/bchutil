@@ -18,6 +18,59 @@ import (
 // ln2Squared is simply the square of the natural log of 2.
 const ln2Squared = math.Ln2 * math.Ln2
 
+// bloomUpdateMask selects the bits of the filter flags that say how matched
+// outputs update the filter.  The other bits are reserved.
+const bloomUpdateMask = 3
+
+// scriptPushes calls f with the data of each push in script that pushes at
+// least one byte, in order, until f returns true or the script ends.  It stops
+// at a malformed push, so the pushes before it are still seen.
+func scriptPushes(script []byte, f func(data []byte) bool) {
+	for i := 0; i < len(script); {
+		op := script[i]
+		i++
+		if op > txscript.OP_PUSHDATA4 {
+			continue
+		}
+
+		var size int
+		switch op {
+		case txscript.OP_PUSHDATA1:
+			if len(script)-i < 1 {
+				return
+			}
+			size = int(script[i])
+			i++
+		case txscript.OP_PUSHDATA2:
+			if len(script)-i < 2 {
+				return
+			}
+			size = int(binary.LittleEndian.Uint16(script[i:]))
+			i += 2
+		case txscript.OP_PUSHDATA4:
+			if len(script)-i < 4 {
+				return
+			}
+			size64 := uint64(binary.LittleEndian.Uint32(script[i:]))
+			if size64 > uint64(len(script)-i-4) {
+				return
+			}
+			size = int(size64)
+			i += 4
+		default:
+			size = int(op)
+		}
+		if len(script)-i < size {
+			return
+		}
+		data := script[i : i+size]
+		i += size
+		if len(data) != 0 && f(data) {
+			return
+		}
+	}
+}
+
 // minUint32 is a convenience function to return the minimum value of the two
 // passed uint32 values.
 func minUint32(a, b uint32) uint32 {
@@ -271,7 +324,7 @@ func (bf *Filter) AddOutPoint(outpoint *wire.OutPoint) {
 //
 // This function MUST be called with the filter lock held.
 func (bf *Filter) maybeAddOutpoint(pkScript []byte, outHash *chainhash.Hash, outIdx uint32) {
-	switch bf.msgFilterLoad.Flags {
+	switch bf.msgFilterLoad.Flags & bloomUpdateMask {
 	case wire.BloomUpdateAll:
 		outpoint := wire.NewOutPoint(outHash, outIdx)
 		bf.addOutPoint(outpoint)
@@ -310,20 +363,14 @@ func (bf *Filter) matchAndInsertOutputs(tx *bchutil.Tx) bool {
 	// from the client and avoids some potential races that could otherwise
 	// occur.
 	for i, txOut := range tx.MsgTx().TxOut {
-		pushedData, err := txscript.PushedData(txOut.PkScript)
-		if err != nil {
-			continue
-		}
-
-		for _, data := range pushedData {
+		scriptPushes(txOut.PkScript, func(data []byte) bool {
 			if !bf.matches(data) {
-				continue
+				return false
 			}
-
 			matched = true
 			bf.maybeAddOutpoint(txOut.PkScript, tx.Hash(), uint32(i))
-			break
-		}
+			return true
+		})
 	}
 	return matched
 }
@@ -342,17 +389,15 @@ func (bf *Filter) matchInputs(tx *bchutil.Tx) bool {
 			return true
 		}
 
-		pushedData, err := txscript.PushedData(txin.SignatureScript)
-		if err != nil {
-			continue
-		}
-		for _, data := range pushedData {
-			if bf.matches(data) {
-				return true
-			}
+		matched := false
+		scriptPushes(txin.SignatureScript, func(data []byte) bool {
+			matched = bf.matches(data)
+			return matched
+		})
+		if matched {
+			return true
 		}
 	}
-
 	return false
 }
 
@@ -382,6 +427,9 @@ func (bf *Filter) MatchInputs(tx *bchutil.Tx) bool {
 // the passed transaction, it will also update the filter depending on the bloom
 // update flags set via the loaded filter if needed.  The inputs are only
 // checked when the outputs don't match.
+//
+// Only pushes of at least one byte are matched, and the pushes before a
+// malformed one in a script are still seen.
 //
 // This function is safe for concurrent access.
 func (bf *Filter) MatchTxAndUpdate(tx *bchutil.Tx) bool {
