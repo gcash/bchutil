@@ -73,6 +73,36 @@ type Address interface {
 	IsForNet(*chaincfg.Params) bool
 }
 
+// TokenAwareAddress is an Address with a token-aware cashaddr form, which
+// signals that the receiving wallet can hold CashTokens.  It is implemented
+// by AddressPubKeyHash, AddressScriptHash and AddressScriptHash32.
+//
+// Following the CashTokens CHIP, a wallet should send tokens to an address
+// only if it is token-aware:
+//
+//	t, ok := addr.(TokenAwareAddress)
+//	canReceiveTokens := ok && t.IsTokenAware()
+//
+// Legacy, pay-to-pubkey and SLP addresses are not token-aware.
+//
+// EncodeAddress and String always return the plain cashaddr, so an address
+// encodes the same whichever form it was decoded from.  CashAddress returns
+// the form the address is in.
+type TokenAwareAddress interface {
+	Address
+
+	// IsTokenAware returns whether the address is in its token-aware form.
+	IsTokenAware() bool
+
+	// CashAddress returns the cashaddr of the address in its own form:
+	// the token-aware form if IsTokenAware is true, else the plain form.
+	CashAddress() string
+
+	// EncodeCashAddress returns the cashaddr of the address in the
+	// token-aware form if tokenAware is true, else in the plain form.
+	EncodeCashAddress(tokenAware bool) string
+}
+
 // DecodeAddress decodes the string encoding of an address and returns
 // the Address if addr is a valid encoding for a known address type.
 //
@@ -101,16 +131,31 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 		case ripemd160.Size: // P2PKH or P2SH
 			switch typ {
 			case AddrTypePayToPubKeyHash, AddrTypeTokenPayToPubKeyHash:
-				return newAddressPubKeyHash(decoded, defaultNet)
+				addr, err := newAddressPubKeyHash(decoded, defaultNet)
+				if err != nil {
+					return nil, err
+				}
+				addr.tokenAware = typ == AddrTypeTokenPayToPubKeyHash
+				return addr, nil
 			case AddrTypePayToScriptHash, AddrTypeTokenPayToScriptHash:
-				return newAddressScriptHashFromHash(decoded, defaultNet)
+				addr, err := newAddressScriptHashFromHash(decoded, defaultNet)
+				if err != nil {
+					return nil, err
+				}
+				addr.tokenAware = typ == AddrTypeTokenPayToScriptHash
+				return addr, nil
 			default:
 				return nil, ErrUnknownAddressType
 			}
 		case sha256.Size: // P2SH32
 			switch typ {
 			case AddrTypePayToScriptHash, AddrTypeTokenPayToScriptHash:
-				return newAddressScriptHash32FromHash(decoded, defaultNet)
+				addr, err := newAddressScriptHash32FromHash(decoded, defaultNet)
+				if err != nil {
+					return nil, err
+				}
+				addr.tokenAware = typ == AddrTypeTokenPayToScriptHash
+				return addr, nil
 			default:
 				return nil, ErrUnknownAddressType
 			}
@@ -255,8 +300,9 @@ func encodeCashAddress(hash160 []byte, prefix string, t AddressType) string {
 // AddressPubKeyHash is an Address for a pay-to-pubkey-hash (P2PKH)
 // transaction.
 type AddressPubKeyHash struct {
-	hash   [ripemd160.Size]byte
-	prefix string
+	hash       [ripemd160.Size]byte
+	prefix     string
+	tokenAware bool
 }
 
 // NewAddressPubKeyHash returns a new AddressPubKeyHash. pkHash must be 20
@@ -291,9 +337,48 @@ func newAddressPubKeyHash(pkHash []byte, net *chaincfg.Params) (*AddressPubKeyHa
 }
 
 // EncodeAddress returns the string encoding of a pay-to-pubkey-hash
-// address.  Part of the Address interface.
+// address.  It is always the plain form, also for a token-aware address;
+// use CashAddress to keep the token-aware form.  Part of the Address
+// interface.
 func (a *AddressPubKeyHash) EncodeAddress() string {
+	return a.EncodeCashAddress(false)
+}
+
+// CashAddress returns the string encoding of the address in its own form,
+// the token-aware form if IsTokenAware is true.  Like EncodeAddress, it
+// leaves out the "prefix:" part.
+func (a *AddressPubKeyHash) CashAddress() string {
+	return a.EncodeCashAddress(a.tokenAware)
+}
+
+// EncodeCashAddress returns the string encoding of the address in the
+// token-aware form if tokenAware is true, else in the plain form.  Like
+// EncodeAddress, it leaves out the "prefix:" part.
+func (a *AddressPubKeyHash) EncodeCashAddress(tokenAware bool) string {
+	if tokenAware {
+		return encodeCashAddress(a.hash[:], a.prefix, AddrTypeTokenPayToPubKeyHash)
+	}
 	return encodeCashAddress(a.hash[:], a.prefix, AddrTypePayToPubKeyHash)
+}
+
+// IsTokenAware returns whether the address is in its token-aware form.
+func (a *AddressPubKeyHash) IsTokenAware() bool {
+	return a.tokenAware
+}
+
+// TokenAware returns a copy of the address in its token-aware form.  SLP
+// addresses have no token-aware form, so it is not meant for them.
+func (a *AddressPubKeyHash) TokenAware() *AddressPubKeyHash {
+	addr := *a
+	addr.tokenAware = true
+	return &addr
+}
+
+// NonTokenAware returns a copy of the address in its plain form.
+func (a *AddressPubKeyHash) NonTokenAware() *AddressPubKeyHash {
+	addr := *a
+	addr.tokenAware = false
+	return &addr
 }
 
 // ScriptAddress returns the bytes to be included in a txout script to pay
@@ -310,7 +395,8 @@ func (a *AddressPubKeyHash) IsForNet(net *chaincfg.Params) bool {
 
 // String returns a human-readable string for the pay-to-pubkey-hash address.
 // This is equivalent to calling EncodeAddress, but is provided so the type can
-// be used as a fmt.Stringer.
+// be used as a fmt.Stringer.  It is always the plain form, also for a
+// token-aware address; use CashAddress to keep the token-aware form.
 func (a *AddressPubKeyHash) String() string {
 	return a.EncodeAddress()
 }
@@ -325,8 +411,9 @@ func (a *AddressPubKeyHash) Hash160() *[ripemd160.Size]byte {
 // AddressScriptHash is an Address for a pay-to-script-hash (P2SH)
 // transaction.
 type AddressScriptHash struct {
-	hash   [ripemd160.Size]byte
-	prefix string
+	hash       [ripemd160.Size]byte
+	prefix     string
+	tokenAware bool
 }
 
 // NewAddressScriptHash returns a new AddressScriptHash.
@@ -367,9 +454,48 @@ func newAddressScriptHashFromHash(scriptHash []byte, net *chaincfg.Params) (*Add
 }
 
 // EncodeAddress returns the string encoding of a pay-to-script-hash
-// address.  Part of the Address interface.
+// address.  It is always the plain form, also for a token-aware address;
+// use CashAddress to keep the token-aware form.  Part of the Address
+// interface.
 func (a *AddressScriptHash) EncodeAddress() string {
+	return a.EncodeCashAddress(false)
+}
+
+// CashAddress returns the string encoding of the address in its own form,
+// the token-aware form if IsTokenAware is true.  Like EncodeAddress, it
+// leaves out the "prefix:" part.
+func (a *AddressScriptHash) CashAddress() string {
+	return a.EncodeCashAddress(a.tokenAware)
+}
+
+// EncodeCashAddress returns the string encoding of the address in the
+// token-aware form if tokenAware is true, else in the plain form.  Like
+// EncodeAddress, it leaves out the "prefix:" part.
+func (a *AddressScriptHash) EncodeCashAddress(tokenAware bool) string {
+	if tokenAware {
+		return encodeCashAddress(a.hash[:], a.prefix, AddrTypeTokenPayToScriptHash)
+	}
 	return encodeCashAddress(a.hash[:], a.prefix, AddrTypePayToScriptHash)
+}
+
+// IsTokenAware returns whether the address is in its token-aware form.
+func (a *AddressScriptHash) IsTokenAware() bool {
+	return a.tokenAware
+}
+
+// TokenAware returns a copy of the address in its token-aware form.  SLP
+// addresses have no token-aware form, so it is not meant for them.
+func (a *AddressScriptHash) TokenAware() *AddressScriptHash {
+	addr := *a
+	addr.tokenAware = true
+	return &addr
+}
+
+// NonTokenAware returns a copy of the address in its plain form.
+func (a *AddressScriptHash) NonTokenAware() *AddressScriptHash {
+	addr := *a
+	addr.tokenAware = false
+	return &addr
 }
 
 // ScriptAddress returns the bytes to be included in a txout script to pay
@@ -386,7 +512,8 @@ func (a *AddressScriptHash) IsForNet(net *chaincfg.Params) bool {
 
 // String returns a human-readable string for the pay-to-script-hash address.
 // This is equivalent to calling EncodeAddress, but is provided so the type can
-// be used as a fmt.Stringer.
+// be used as a fmt.Stringer.  It is always the plain form, also for a
+// token-aware address; use CashAddress to keep the token-aware form.
 func (a *AddressScriptHash) String() string {
 	return a.EncodeAddress()
 }
@@ -401,8 +528,9 @@ func (a *AddressScriptHash) Hash160() *[ripemd160.Size]byte {
 // AddressScriptHash32 is an Address for a pay-to-script-hash32 (P2SH32)
 // transaction.
 type AddressScriptHash32 struct {
-	hash   [sha256.Size]byte
-	prefix string
+	hash       [sha256.Size]byte
+	prefix     string
+	tokenAware bool
 }
 
 // NewAddressScriptHash32 returns a new AddressScriptHash32.
@@ -443,9 +571,48 @@ func newAddressScriptHash32FromHash(scriptHash []byte, net *chaincfg.Params) (*A
 }
 
 // EncodeAddress returns the string encoding of a pay-to-script-hash
-// address.  Part of the Address interface.
+// address.  It is always the plain form, also for a token-aware address;
+// use CashAddress to keep the token-aware form.  Part of the Address
+// interface.
 func (a *AddressScriptHash32) EncodeAddress() string {
+	return a.EncodeCashAddress(false)
+}
+
+// CashAddress returns the string encoding of the address in its own form,
+// the token-aware form if IsTokenAware is true.  Like EncodeAddress, it
+// leaves out the "prefix:" part.
+func (a *AddressScriptHash32) CashAddress() string {
+	return a.EncodeCashAddress(a.tokenAware)
+}
+
+// EncodeCashAddress returns the string encoding of the address in the
+// token-aware form if tokenAware is true, else in the plain form.  Like
+// EncodeAddress, it leaves out the "prefix:" part.
+func (a *AddressScriptHash32) EncodeCashAddress(tokenAware bool) string {
+	if tokenAware {
+		return checkEncodeCashAddress(a.hash[:], a.prefix, AddrTypeTokenPayToScriptHash)
+	}
 	return checkEncodeCashAddress(a.hash[:], a.prefix, AddrTypePayToScriptHash)
+}
+
+// IsTokenAware returns whether the address is in its token-aware form.
+func (a *AddressScriptHash32) IsTokenAware() bool {
+	return a.tokenAware
+}
+
+// TokenAware returns a copy of the address in its token-aware form.  SLP
+// addresses have no token-aware form, so it is not meant for them.
+func (a *AddressScriptHash32) TokenAware() *AddressScriptHash32 {
+	addr := *a
+	addr.tokenAware = true
+	return &addr
+}
+
+// NonTokenAware returns a copy of the address in its plain form.
+func (a *AddressScriptHash32) NonTokenAware() *AddressScriptHash32 {
+	addr := *a
+	addr.tokenAware = false
+	return &addr
 }
 
 // ScriptAddress returns the bytes to be included in a txout script to pay
@@ -462,7 +629,8 @@ func (a *AddressScriptHash32) IsForNet(net *chaincfg.Params) bool {
 
 // String returns a human-readable string for the pay-to-script-hash address.
 // This is equivalent to calling EncodeAddress, but is provided so the type can
-// be used as a fmt.Stringer.
+// be used as a fmt.Stringer.  It is always the plain form, also for a
+// token-aware address; use CashAddress to keep the token-aware form.
 func (a *AddressScriptHash32) String() string {
 	return a.EncodeAddress()
 }
@@ -791,15 +959,15 @@ const (
 	AddrTypePayToPubKeyHash AddressType = 0
 
 	// AddrTypePayToScriptHash is the numeric identifier for
-	// a cashaddr PayToPubkeyHash address
+	// a cashaddr PayToScriptHash address
 	AddrTypePayToScriptHash AddressType = 1
 
-	// AddrTypePayToScriptHash is the numeric identifier for
-	// a token aware cashaddr PayToPubkeyHash address
+	// AddrTypeTokenPayToPubKeyHash is the numeric identifier for
+	// a token-aware cashaddr PayToPubkeyHash address
 	AddrTypeTokenPayToPubKeyHash AddressType = 2
 
 	// AddrTypeTokenPayToScriptHash is the numeric identifier for
-	// a token aware cashaddr PayToPubkeyHash address
+	// a token-aware cashaddr PayToScriptHash address
 	AddrTypeTokenPayToScriptHash AddressType = 3
 )
 
@@ -1094,7 +1262,7 @@ func convertBits(data []byte, fromBits uint, tobits uint, pad bool) ([]byte, err
 
 func packAddressData(addrType AddressType, addrHash []byte) ([]byte, error) {
 	// Pack addr data with version byte.
-	if addrType != AddrTypePayToPubKeyHash && addrType != AddrTypePayToScriptHash {
+	if addrType < AddrTypePayToPubKeyHash || addrType > AddrTypeTokenPayToScriptHash {
 		return nil, errors.New("invalid AddressType")
 	}
 	versionByte := uint(addrType) << 3

@@ -42,5 +42,21 @@ To decode/encode an address:
 		return
 	}
 	fmt.Println(addr.EncodeAddress())
+
+Cashaddr pay-to-pubkey-hash and pay-to-script-hash addresses also have a
+token-aware form (the z and r addresses) for wallets that can hold CashTokens.
+These types implement TokenAwareAddress: IsTokenAware reports the form an
+address was decoded in, TokenAware and NonTokenAware return a copy in either
+form, CashAddress encodes the address in its own form and EncodeCashAddress in
+either form.  EncodeAddress and String always return the plain form, so
+addresses that pay to the same script encode the same.
+
+Following the CashTokens CHIP, a wallet should send tokens to an address only
+if it is token-aware:
+
+	t, ok := addr.(bchutil.TokenAwareAddress)
+	canReceiveTokens := ok && t.IsTokenAware()
+
+Legacy, pay-to-pubkey and SLP addresses are not token-aware.
 */
 package bchutil

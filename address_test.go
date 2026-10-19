@@ -1155,3 +1155,332 @@ func TestSlpP2SH32RoundTrip(t *testing.T) {
 		t.Errorf("decoded %v, want %v", decoded, addr)
 	}
 }
+
+// tokenAwareTestVectors are the valid vectors from BCHN's
+// cashaddr_token_types.json.
+var tokenAwareTestVectors = []struct {
+	typ     bchutil.AddressType
+	addr    string
+	payload string
+}{
+	{0, "bitcoincash:qr6m7j9njldwwzlg9v7v53unlr4jkmx6eylep8ekg2", "f5bf48b397dae70be82b3cca4793f8eb2b6cdac9"},
+	{2, "bitcoincash:zr6m7j9njldwwzlg9v7v53unlr4jkmx6eycnjehshe", "f5bf48b397dae70be82b3cca4793f8eb2b6cdac9"},
+	{1, "bchtest:pr6m7j9njldwwzlg9v7v53unlr4jkmx6eyvwc0uz5t", "f5bf48b397dae70be82b3cca4793f8eb2b6cdac9"},
+	{0, "bitcoincash:qr7fzmep8g7h7ymfxy74lgc0v950j3r2959lhtxxsl", "fc916f213a3d7f1369313d5fa30f6168f9446a2d"},
+	{2, "bitcoincash:zr7fzmep8g7h7ymfxy74lgc0v950j3r295z4y4gq0v", "fc916f213a3d7f1369313d5fa30f6168f9446a2d"},
+	{0, "bchtest:qr7fzmep8g7h7ymfxy74lgc0v950j3r295pdnvy3hr", "fc916f213a3d7f1369313d5fa30f6168f9446a2d"},
+	{2, "bchtest:zr7fzmep8g7h7ymfxy74lgc0v950j3r295x8qj2hgs", "fc916f213a3d7f1369313d5fa30f6168f9446a2d"},
+	{0, "bchreg:qr7fzmep8g7h7ymfxy74lgc0v950j3r295m39d8z59", "fc916f213a3d7f1369313d5fa30f6168f9446a2d"},
+	{2, "bchreg:zr7fzmep8g7h7ymfxy74lgc0v950j3r295umknfytk", "fc916f213a3d7f1369313d5fa30f6168f9446a2d"},
+	{0, "bitcoincash:qpagr634w55t4wp56ftxx53xukhqgl24yse53qxdge", "7a81ea357528bab834d256635226e5ae047d5524"},
+	{2, "bitcoincash:zpagr634w55t4wp56ftxx53xukhqgl24ys77z7gth2", "7a81ea357528bab834d256635226e5ae047d5524"},
+	{0, "bitcoincash:qq9l9e2dgkx0hp43qm3c3h252e9euugrfc6vlt3r9e", "0bf2e54d458cfb86b106e388dd54564b9e71034e"},
+	{2, "bitcoincash:zq9l9e2dgkx0hp43qm3c3h252e9euugrfcaxv4l962", "0bf2e54d458cfb86b106e388dd54564b9e71034e"},
+	{0, "bitcoincash:qre24q38ghy6k3pegpyvtxahu8q8hqmxmqqn28z85p", "f2aa822745c9ab44394048c59bb7e1c07b8366d8"},
+	{2, "bitcoincash:zre24q38ghy6k3pegpyvtxahu8q8hqmxmq8eeevptj", "f2aa822745c9ab44394048c59bb7e1c07b8366d8"},
+	{0, "bitcoincash:qz7xc0vl85nck65ffrsx5wvewjznp9lflgktxc5878", "bc6c3d9f3d278b6a8948e06a399974853097e9fa"},
+	{2, "bitcoincash:zz7xc0vl85nck65ffrsx5wvewjznp9lflg3p4x6pp5", "bc6c3d9f3d278b6a8948e06a399974853097e9fa"},
+	{1, "bitcoincash:ppawqn2h74a4t50phuza84kdp3794pq3ccvm92p8sh", "7ae04d57f57b55d1e1bf05d3d6cd0c7c5a8411c6"},
+	{3, "bitcoincash:rpawqn2h74a4t50phuza84kdp3794pq3cct3k50p0y", "7ae04d57f57b55d1e1bf05d3d6cd0c7c5a8411c6"},
+	{1, "bitcoincash:pqv53dwyatxse2xh7nnlqhyr6ryjgfdtagkd4vc388", "1948b5c4eacd0ca8d7f4e7f05c83d0c92425abea"},
+	{3, "bitcoincash:rqv53dwyatxse2xh7nnlqhyr6ryjgfdtag38xjkhc5", "1948b5c4eacd0ca8d7f4e7f05c83d0c92425abea"},
+	{1, "bitcoincash:prseh0a4aejjcewhc665wjqhppgwrz2lw5txgn666a", "e19bbfb5ee652c65d7c6b54748170850e1895f75"},
+	{3, "bitcoincash:rrseh0a4aejjcewhc665wjqhppgwrz2lw5vvmd5u9w", "e19bbfb5ee652c65d7c6b54748170850e1895f75"},
+	{1, "bitcoincash:pzltaslh7xnrsxeqm7qtvh0v53n3gfk0v5wwf6d7j4", "bebec3f7f1a6381b20df80b65deca4671426cf65"},
+	{3, "bitcoincash:rzltaslh7xnrsxeqm7qtvh0v53n3gfk0v5fy6yrcdx", "bebec3f7f1a6381b20df80b65deca4671426cf65"},
+	{1, "bitcoincash:pvqqqqqqqqqqqqqqqqqqqqqqzg69v7ysqqqqqqqqqqqqqqqqqqqqqpkp7fqn0", "0000000000000000000000000000123456789000000000000000000000000000"},
+	{3, "bitcoincash:rvqqqqqqqqqqqqqqqqqqqqqqzg69v7ysqqqqqqqqqqqqqqqqqqqqqn9alsp2y", "0000000000000000000000000000123456789000000000000000000000000000"},
+	{1, "bitcoincash:pdzyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3jh2p5nn", "4444444444444444444444444444444444444444444444444444444444444444"},
+	{3, "bitcoincash:rdzyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygrpttc42c", "4444444444444444444444444444444444444444444444444444444444444444"},
+	{1, "bitcoincash:pwyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygsh3sujgcr", "8888888888888888888888888888888888888888888888888888888888888888"},
+	{3, "bitcoincash:rwyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygs9zvatfpg", "8888888888888888888888888888888888888888888888888888888888888888"},
+	{1, "bitcoincash:p0xvenxvenxvenxvenxvenxvenxvenxvenxvenxvenxvenxvenxvcm6gz4t77", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"},
+	{3, "bitcoincash:r0xvenxvenxvenxvenxvenxvenxvenxvenxvenxvenxvenxvenxvcff5rv284", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"},
+	{1, "bitcoincash:p0llllllllllllllllllllllllllllllllllllllllllllllllll7x3vthu35", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+	{3, "bitcoincash:r0llllllllllllllllllllllllllllllllllllllllllllllllll75zs2wagl", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+	{1, "bchtest:pvch8mmxy0rtfrlarg7ucrxxfzds5pamg73h7370aa87d80gyhqxq7fqng6m6", "3173ef6623c6b48ffd1a3dcc0cc6489b0a07bb47a37f47cfef4fe69de825c060"},
+	{1, "pref:pr6m7j9njldwwzlg9v7v53unlr4jkmx6ey65nvtks5", "f5bf48b397dae70be82b3cca4793f8eb2b6cdac9"},
+	{0, "prefix:qr7fzmep8g7h7ymfxy74lgc0v950j3r295fu6e430r", "fc916f213a3d7f1369313d5fa30f6168f9446a2d"},
+	{2, "prefix:zr7fzmep8g7h7ymfxy74lgc0v950j3r295wkf8mhss", "fc916f213a3d7f1369313d5fa30f6168f9446a2d"},
+	{1, "pref:pvch8mmxy0rtfrlarg7ucrxxfzds5pamg73h7370aa87d80gyhqxq4k9m7qf9", "3173ef6623c6b48ffd1a3dcc0cc6489b0a07bb47a37f47cfef4fe69de825c060"},
+}
+
+// tokenAwareInvalidTestVectors are the vectors from BCHN's
+// cashaddr_token_types.json with an unknown type or a hash size other than
+// 20 or 32 bytes, or 32 bytes for a P2PKH.
+var tokenAwareInvalidTestVectors = []string{
+	"prefix:0r6m7j9njldwwzlg9v7v53unlr4jkmx6ey3qnjwsrf",
+	"bitcoincash:q9adhakpwzztepkpwp5z0dq62m6u5v5xtyj7j3h2ws4mr9g0",
+	"bchtest:p9adhakpwzztepkpwp5z0dq62m6u5v5xtyj7j3h2u94tsynr",
+	"pref:p9adhakpwzztepkpwp5z0dq62m6u5v5xtyj7j3h2khlwwk5v",
+	"prefix:09adhakpwzztepkpwp5z0dq62m6u5v5xtyj7j3h2p29kc2lp",
+	"bitcoincash:qgagf7w02x4wnz3mkwnchut2vxphjzccwxgjvvjmlsxqwkcw59jxxuz",
+	"bchtest:pgagf7w02x4wnz3mkwnchut2vxphjzccwxgjvvjmlsxqwkcvs7md7wt",
+	"pref:pgagf7w02x4wnz3mkwnchut2vxphjzccwxgjvvjmlsxqwkcrsr6gzkn",
+	"prefix:0gagf7w02x4wnz3mkwnchut2vxphjzccwxgjvvjmlsxqwkc5djw8s9g",
+	"bitcoincash:qvch8mmxy0rtfrlarg7ucrxxfzds5pamg73h7370aa87d80gyhqxq5nlegake",
+	"prefix:0vch8mmxy0rtfrlarg7ucrxxfzds5pamg73h7370aa87d80gyhqxqsh6jgp6w",
+	"bitcoincash:qnq8zwpj8cq05n7pytfmskuk9r4gzzel8qtsvwz79zdskftrzxtar994cgutavfklv39gr3uvz",
+	"bchtest:pnq8zwpj8cq05n7pytfmskuk9r4gzzel8qtsvwz79zdskftrzxtar994cgutavfklvmgm6ynej",
+	"pref:pnq8zwpj8cq05n7pytfmskuk9r4gzzel8qtsvwz79zdskftrzxtar994cgutavfklv0vx5z0w3",
+	"prefix:0nq8zwpj8cq05n7pytfmskuk9r4gzzel8qtsvwz79zdskftrzxtar994cgutavfklvwsvctzqy",
+	"bitcoincash:qh3krj5607v3qlqh5c3wq3lrw3wnuxw0sp8dv0zugrrt5a3kj6ucysfz8kxwv2k53krr7n933jfsunqex2w82sl",
+	"bchtest:ph3krj5607v3qlqh5c3wq3lrw3wnuxw0sp8dv0zugrrt5a3kj6ucysfz8kxwv2k53krr7n933jfsunqnzf7mt6x",
+	"pref:ph3krj5607v3qlqh5c3wq3lrw3wnuxw0sp8dv0zugrrt5a3kj6ucysfz8kxwv2k53krr7n933jfsunqjntdfcwg",
+	"prefix:0h3krj5607v3qlqh5c3wq3lrw3wnuxw0sp8dv0zugrrt5a3kj6ucysfz8kxwv2k53krr7n933jfsunqakcssnmn",
+	"bitcoincash:qmvl5lzvdm6km38lgga64ek5jhdl7e3aqd9895wu04fvhlnare5937w4ywkq57juxsrhvw8ym5d8qx7sz7zz0zvcypqscw8jd03f",
+	"bchtest:pmvl5lzvdm6km38lgga64ek5jhdl7e3aqd9895wu04fvhlnare5937w4ywkq57juxsrhvw8ym5d8qx7sz7zz0zvcypqs6kgdsg2g",
+	"pref:pmvl5lzvdm6km38lgga64ek5jhdl7e3aqd9895wu04fvhlnare5937w4ywkq57juxsrhvw8ym5d8qx7sz7zz0zvcypqsammyqffl",
+	"prefix:0mvl5lzvdm6km38lgga64ek5jhdl7e3aqd9895wu04fvhlnare5937w4ywkq57juxsrhvw8ym5d8qx7sz7zz0zvcypqsgjrqpnw8",
+	"bitcoincash:qlg0x333p4238k0qrc5ej7rzfw5g8e4a4r6vvzyrcy8j3s5k0en7calvclhw46hudk5flttj6ydvjc0pv3nchp52amk97tqa5zygg96mtky5sv5w",
+	"bchtest:plg0x333p4238k0qrc5ej7rzfw5g8e4a4r6vvzyrcy8j3s5k0en7calvclhw46hudk5flttj6ydvjc0pv3nchp52amk97tqa5zygg96mc773cwez",
+	"pref:plg0x333p4238k0qrc5ej7rzfw5g8e4a4r6vvzyrcy8j3s5k0en7calvclhw46hudk5flttj6ydvjc0pv3nchp52amk97tqa5zygg96mg7pj3lh8",
+	"prefix:0lg0x333p4238k0qrc5ej7rzfw5g8e4a4r6vvzyrcy8j3s5k0en7calvclhw46hudk5flttj6ydvjc0pv3nchp52amk97tqa5zygg96ms92w6845",
+}
+
+// cashAddrNet returns the network for a cashaddr prefix.  An unknown prefix
+// gets a copy of the main network with that prefix.
+func cashAddrNet(prefix string) *chaincfg.Params {
+	switch prefix {
+	case "bitcoincash":
+		return &chaincfg.MainNetParams
+	case "bchtest":
+		return &chaincfg.TestNet3Params
+	case "bchreg":
+		return &chaincfg.RegressionNetParams
+	default:
+		net := chaincfg.MainNetParams
+		net.CashAddressPrefix = prefix
+		return &net
+	}
+}
+
+// TestTokenAwareAddressVectors ensures token-aware cashaddrs decode with the
+// token-aware flag set, keep it through CashAddress, and pay to the same
+// script as the plain form.
+func TestTokenAwareAddressVectors(t *testing.T) {
+	for _, test := range tokenAwareTestVectors {
+		prefix, data, _ := strings.Cut(test.addr, ":")
+		net := cashAddrNet(prefix)
+		addr, err := bchutil.DecodeAddress(test.addr, net)
+		if err != nil {
+			t.Errorf("%s: %v", test.addr, err)
+			continue
+		}
+		taddr, ok := addr.(bchutil.TokenAwareAddress)
+		if !ok {
+			t.Errorf("%s: %T is not a TokenAwareAddress", test.addr, addr)
+			continue
+		}
+
+		tokenAware := test.typ == bchutil.AddrTypeTokenPayToPubKeyHash ||
+			test.typ == bchutil.AddrTypeTokenPayToScriptHash
+		if taddr.IsTokenAware() != tokenAware {
+			t.Errorf("%s: IsTokenAware %v, want %v", test.addr,
+				taddr.IsTokenAware(), tokenAware)
+		}
+
+		isP2PKH := test.typ == bchutil.AddrTypePayToPubKeyHash ||
+			test.typ == bchutil.AddrTypeTokenPayToPubKeyHash
+		if _, ok := addr.(*bchutil.AddressPubKeyHash); ok != isP2PKH {
+			t.Errorf("%s: decoded as %T", test.addr, addr)
+		}
+
+		if got := taddr.CashAddress(); got != data {
+			t.Errorf("%s: CashAddress %s, want %s", test.addr, got, data)
+		}
+		if got := hex.EncodeToString(addr.ScriptAddress()); got != test.payload {
+			t.Errorf("%s: ScriptAddress %s, want %s", test.addr, got, test.payload)
+		}
+
+		// EncodeAddress and String return the plain form.
+		plain := plainCashAddress(taddr)
+		if addr.EncodeAddress() != plain || addr.String() != plain {
+			t.Errorf("%s: EncodeAddress %s, String %s, want %s", test.addr,
+				addr.EncodeAddress(), addr.String(), plain)
+		}
+		if !tokenAware && plain != data {
+			t.Errorf("%s: plain form %s, want %s", test.addr, plain, data)
+		}
+		if !addr.IsForNet(net) {
+			t.Errorf("%s: not for net %s", test.addr, net.Name)
+		}
+	}
+}
+
+// plainCashAddress returns the plain form of addr.
+func plainCashAddress(addr bchutil.TokenAwareAddress) string {
+	return addr.EncodeCashAddress(false)
+}
+
+// TestTokenAwareAddressInvalidVectors ensures the invalid vectors are
+// rejected, also on a network with their prefix.
+func TestTokenAwareAddressInvalidVectors(t *testing.T) {
+	for _, s := range tokenAwareInvalidTestVectors {
+		prefix, _, _ := strings.Cut(s, ":")
+		if _, err := bchutil.DecodeAddress(s, cashAddrNet(prefix)); err == nil {
+			t.Errorf("%s: decoded an invalid address", s)
+		}
+	}
+
+	// A token-aware P2PKH with a 32 byte hash.
+	const z32 = "bitcoincash:zvch8mmxy0rtfrlarg7ucrxxfzds5pamg73h7370aa87d80gyhqxqxqrc3u0j"
+	_, err := bchutil.DecodeAddress(z32, &chaincfg.MainNetParams)
+	if err != bchutil.ErrUnknownAddressType {
+		t.Errorf("%s: got error %v, want %v", z32, err, bchutil.ErrUnknownAddressType)
+	}
+}
+
+// TestTokenAwareAddressCase ensures token-aware addresses without a prefix or
+// in upper case keep the token-aware flag.
+func TestTokenAwareAddressCase(t *testing.T) {
+	tests := []string{
+		"zr6m7j9njldwwzlg9v7v53unlr4jkmx6eycnjehshe",
+		"ZR6M7J9NJLDWWZLG9V7V53UNLR4JKMX6EYCNJEHSHE",
+		"BITCOINCASH:ZR6M7J9NJLDWWZLG9V7V53UNLR4JKMX6EYCNJEHSHE",
+		"rpawqn2h74a4t50phuza84kdp3794pq3cct3k50p0y",
+		"RPAWQN2H74A4T50PHUZA84KDP3794PQ3CCT3K50P0Y",
+		"BITCOINCASH:RPAWQN2H74A4T50PHUZA84KDP3794PQ3CCT3K50P0Y",
+		"r0llllllllllllllllllllllllllllllllllllllllllllllllll75zs2wagl",
+		"R0LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL75ZS2WAGL",
+	}
+	for _, s := range tests {
+		addr, err := bchutil.DecodeAddress(s, &chaincfg.MainNetParams)
+		if err != nil {
+			t.Errorf("%s: %v", s, err)
+			continue
+		}
+		taddr, ok := addr.(bchutil.TokenAwareAddress)
+		if !ok || !taddr.IsTokenAware() {
+			t.Errorf("%s: decoded without the token-aware flag", s)
+			continue
+		}
+		_, data, found := strings.Cut(s, ":")
+		if !found {
+			data = s
+		}
+		if taddr.CashAddress() != strings.ToLower(data) {
+			t.Errorf("%s: re-encoded as %s", s, taddr.CashAddress())
+		}
+	}
+}
+
+// TestTokenAwareAddressEquality ensures a token-aware address differs from
+// the plain address with the same hash but pays to the same script and
+// encodes the same through EncodeAddress.
+func TestTokenAwareAddressEquality(t *testing.T) {
+	hash, _ := hex.DecodeString("f5bf48b397dae70be82b3cca4793f8eb2b6cdac9")
+	plain, err := bchutil.NewAddressPubKeyHash(hash, &chaincfg.MainNetParams)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoded, err := bchutil.DecodeAddress(
+		"bitcoincash:zr6m7j9njldwwzlg9v7v53unlr4jkmx6eycnjehshe",
+		&chaincfg.MainNetParams)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reflect.DeepEqual(decoded, plain) {
+		t.Error("token-aware address is DeepEqual to the plain address")
+	}
+	if !reflect.DeepEqual(decoded, plain.TokenAware()) {
+		t.Error("token-aware address differs from TokenAware of the plain address")
+	}
+	if !bytes.Equal(decoded.ScriptAddress(), plain.ScriptAddress()) {
+		t.Error("ScriptAddress differs")
+	}
+	if decoded.EncodeAddress() != plain.EncodeAddress() ||
+		decoded.String() != plain.String() {
+		t.Errorf("EncodeAddress %s, want %s", decoded.EncodeAddress(),
+			plain.EncodeAddress())
+	}
+}
+
+// TestTokenAwareAddressRoundTrip ensures both forms of each cashaddr type
+// round trip through CashAddress and DecodeAddress on each network.
+func TestTokenAwareAddressRoundTrip(t *testing.T) {
+	hash20 := bytes.Repeat([]byte{0x5a}, 20)
+	hash32 := bytes.Repeat([]byte{0xa5}, 32)
+	nets := []*chaincfg.Params{
+		&chaincfg.MainNetParams,
+		&chaincfg.TestNet3Params,
+		&chaincfg.TestNet4Params,
+		&chaincfg.RegressionNetParams,
+	}
+	for _, net := range nets {
+		pkh, err := bchutil.NewAddressPubKeyHash(hash20, net)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sh, err := bchutil.NewAddressScriptHashFromHash(hash20, net)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sh32, err := bchutil.NewAddressScriptHash32FromHash(hash32, net)
+		if err != nil {
+			t.Fatal(err)
+		}
+		tests := []struct {
+			addr       bchutil.TokenAwareAddress
+			tokenAware bool
+			first      byte
+		}{
+			{pkh, false, 'q'},
+			{pkh.TokenAware(), true, 'z'},
+			{sh, false, 'p'},
+			{sh.TokenAware(), true, 'r'},
+			{sh32, false, 'p'},
+			{sh32.TokenAware(), true, 'r'},
+		}
+		for _, test := range tests {
+			encoded := test.addr.CashAddress()
+			if encoded[0] != test.first {
+				t.Errorf("%s: %s should start with %c", net.Name, encoded,
+					test.first)
+			}
+			if test.addr.IsTokenAware() != test.tokenAware {
+				t.Errorf("%s: IsTokenAware %v, want %v", encoded,
+					test.addr.IsTokenAware(), test.tokenAware)
+			}
+
+			decoded, err := bchutil.DecodeAddress(net.CashAddressPrefix+":"+encoded, net)
+			if err != nil {
+				t.Errorf("%s: %v", encoded, err)
+				continue
+			}
+			if !reflect.DeepEqual(decoded, test.addr) {
+				t.Errorf("%s: decoded %#v, want %#v", encoded, decoded, test.addr)
+			}
+			taddr := decoded.(bchutil.TokenAwareAddress)
+			if taddr.CashAddress() != encoded {
+				t.Errorf("%s: re-encoded as %s", encoded, taddr.CashAddress())
+			}
+
+			// The plain form and the script are the same for both forms.
+			plain := plainCashAddress(test.addr)
+			if decoded.EncodeAddress() != plain || plain[0] == 'z' || plain[0] == 'r' {
+				t.Errorf("%s: EncodeAddress %s, plain form %s", encoded,
+					decoded.EncodeAddress(), plain)
+			}
+			if !test.tokenAware && encoded != plain {
+				t.Errorf("%s: plain address changed to %s", encoded, plain)
+			}
+			if !bytes.Equal(decoded.ScriptAddress(), test.addr.ScriptAddress()) {
+				t.Errorf("%s: ScriptAddress differs", encoded)
+			}
+			if !decoded.IsForNet(net) {
+				t.Errorf("%s: not for net %s", encoded, net.Name)
+			}
+		}
+
+		// TokenAware and NonTokenAware return copies.
+		if pkh.IsTokenAware() || sh.IsTokenAware() || sh32.IsTokenAware() {
+			t.Errorf("%s: TokenAware changed the original address", net.Name)
+		}
+		if !pkh.TokenAware().NonTokenAware().TokenAware().IsTokenAware() ||
+			pkh.TokenAware().NonTokenAware().IsTokenAware() {
+			t.Errorf("%s: TokenAware and NonTokenAware don't toggle the form",
+				net.Name)
+		}
+	}
+}
