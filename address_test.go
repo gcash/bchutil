@@ -1484,3 +1484,45 @@ func TestTokenAwareAddressRoundTrip(t *testing.T) {
 		}
 	}
 }
+
+// TestDecodeAddressLength ensures DecodeAddress decodes the longest form of
+// each kind of address it accepts, and refuses longer input before decoding
+// any of it.  Its base58 fallback takes time quadratic in the input's length:
+// over a second for 128 KB.
+func TestDecodeAddressLength(t *testing.T) {
+	params := &chaincfg.MainNetParams
+	slp32, err := bchutil.NewSlpAddressScriptHash32FromHash(
+		bytes.Repeat([]byte{0x44}, 32), params)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pubKey := "0411db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5cb2" +
+		"e0eaddfb84ccf9744464f82e160bfa9b8b64f9d4c03f999b8643f656b412a3"
+	longest := []string{
+		pubKey,
+		"02192d74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b4",
+		"bitcoincash:pdzyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3jh2p5nn",
+		"simpleledger:" + slp32.EncodeAddress(),
+		"1MirQ9bwyQcGVJPwKUgapu5ouK2E2Ey4gX",
+	}
+	for _, addr := range longest {
+		if _, err := bchutil.DecodeAddress(addr, params); err != nil {
+			t.Errorf("DecodeAddress(%q): %v", addr, err)
+		}
+	}
+
+	for _, addr := range []string{pubKey + "0", strings.Repeat("2", 1<<20)} {
+		_, err := bchutil.DecodeAddress(addr, params)
+		if err == nil || err.Error() != "invalid length address" {
+			t.Fatalf("DecodeAddress of %d characters: %v, want invalid "+
+				"length address", len(addr), err)
+		}
+		allocs := testing.AllocsPerRun(10, func() {
+			_, _ = bchutil.DecodeAddress(addr, params)
+		})
+		if allocs > 1 {
+			t.Fatalf("DecodeAddress of %d characters made %v allocations",
+				len(addr), allocs)
+		}
+	}
+}

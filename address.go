@@ -103,6 +103,11 @@ type TokenAwareAddress interface {
 	EncodeCashAddress(tokenAware bool) string
 }
 
+// maxAddressLength is the length of the longest string DecodeAddress accepts,
+// an uncompressed public key in hex.  A cashaddr is at most 74 characters,
+// with the slp prefix and a 32-byte hash, and a base58 address at most 35.
+const maxAddressLength = 130
+
 // DecodeAddress decodes the string encoding of an address and returns
 // the Address if addr is a valid encoding for a known address type.
 //
@@ -112,7 +117,12 @@ type TokenAwareAddress interface {
 func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 	bchPrefix := defaultNet.CashAddressPrefix
 	slpPrefix := defaultNet.SlpAddressPrefix
-	if len(addr) < len(bchPrefix)+2 || len(addr) < len(slpPrefix)+2 {
+
+	// Longer input is refused before any of it is decoded, since the base58
+	// decoding below takes time quadratic in its length.
+	if len(addr) < len(bchPrefix)+2 || len(addr) < len(slpPrefix)+2 ||
+		len(addr) > maxAddressLength {
+
 		return nil, errors.New("invalid length address")
 	}
 
