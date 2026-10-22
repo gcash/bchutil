@@ -127,11 +127,19 @@ func NewMerkleBlockWithTxnSet(block *bchutil.Block, txnSet []*chainhash.Hash) (*
 		matchedBits: make([]byte, 0, numTx),
 	}
 
+	// The list is looked up for each transaction of the block, so it goes
+	// in a map first: searching the slice each time would take time
+	// quadratic in the number of transactions.
+	inSet := make(map[chainhash.Hash]struct{}, len(txnSet))
+	for _, hash := range txnSet {
+		inSet[*hash] = struct{}{}
+	}
+
 	// add all block transactions to merkle block and set bits for matching
 	// transactions
 	var matchedIndices []uint32
 	for txIndex, tx := range block.Transactions() {
-		if TxInSet(tx.Hash(), txnSet) {
+		if _, ok := inSet[*tx.Hash()]; ok {
 			mBlock.matchedBits = append(mBlock.matchedBits, 0x01)
 			matchedIndices = append(matchedIndices, uint32(txIndex))
 		} else {

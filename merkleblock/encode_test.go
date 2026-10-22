@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"github.com/gcash/bchd/chaincfg"
 	"testing"
+	"time"
 
 	"github.com/gcash/bchd/chaincfg/chainhash"
 	"github.com/gcash/bchd/wire"
@@ -109,6 +110,33 @@ func TestMerkleBlockOutOfOrder(t *testing.T) {
 	mBlock, _ := merkleblock.NewMerkleBlockWithFilter(blk, f)
 	if mBlock.Transactions != 3 {
 		t.Fatalf("Returned incorrect number of transactions. Expected %d, got %d", 3, mBlock.Transactions)
+	}
+}
+
+// TestNewMerkleBlockWithTxnSetManyTxns ensures a proof for many transactions
+// of a block takes time linear in their number, rather than each transaction
+// of the block being compared with every txid of the set before it.
+func TestNewMerkleBlockWithTxnSetManyTxns(t *testing.T) {
+	const numTxns = 200000
+	msgBlock := &wire.MsgBlock{}
+	for i := range numTxns {
+		tx := wire.NewMsgTx(1)
+		tx.LockTime = uint32(i)
+		msgBlock.Transactions = append(msgBlock.Transactions, tx)
+	}
+	block := bchutil.NewBlock(msgBlock)
+	txnSet := make([]*chainhash.Hash, 0, numTxns)
+	for _, tx := range block.Transactions() {
+		txnSet = append(txnSet, tx.Hash())
+	}
+
+	start := time.Now()
+	_, matched := merkleblock.NewMerkleBlockWithTxnSet(block, txnSet)
+	if elapsed := time.Since(start); elapsed > 5*time.Second {
+		t.Errorf("%d transactions took %v", numTxns, elapsed)
+	}
+	if len(matched) != numTxns {
+		t.Errorf("%d transactions matched, want %d", len(matched), numTxns)
 	}
 }
 
