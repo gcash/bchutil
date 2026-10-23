@@ -14,6 +14,7 @@ import (
 
 	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchutil"
+	"github.com/gcash/bchutil/base58"
 	"golang.org/x/crypto/ripemd160" //nolint:staticcheck // RIPEMD-160 is required by the Bitcoin protocol
 )
 
@@ -771,6 +772,21 @@ var invalidCashAddreTestVectors = []string{
 	"bchreg:555555555555555555555555555555551555555555555udxmlmrz",
 	"pre:fix:x32nx6hz",
 	"prefixx64nx6hz",
+	"",
+	":",
+	"p",
+	"p:",
+	"p:g",
+	"p:gp",
+	"p:gpf",
+	"p:gpf8",
+	"p:gpf8m",
+	"p:gpf8m4",
+	"p:gpf8m4h",
+	// Data parts shorter than the checksum that pass it.
+	"rpzrrzpr:",
+	"rqiqkqiqr:",
+	"c:qvdy2z3",
 }
 
 func TestInvalidCashAddreTestVectors(t *testing.T) {
@@ -1504,6 +1520,7 @@ func TestDecodeAddressLength(t *testing.T) {
 		"bitcoincash:pdzyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3jh2p5nn",
 		"simpleledger:" + slp32.EncodeAddress(),
 		"1MirQ9bwyQcGVJPwKUgapu5ouK2E2Ey4gX",
+		"BhUvhkQ6JwtVEdHguJo6M5BJYWn5ftW9vM9WaDDFcjrWiU2KMZ",
 	}
 	for _, addr := range longest {
 		if _, err := bchutil.DecodeAddress(addr, params); err != nil {
@@ -1523,6 +1540,112 @@ func TestDecodeAddressLength(t *testing.T) {
 		if allocs > 1 {
 			t.Fatalf("DecodeAddress of %d characters made %v allocations",
 				len(addr), allocs)
+		}
+	}
+}
+
+// TestDecodeAddressLegacyP2SH32 ensures a P2SH32 address in legacy form
+// decodes as in BCHN: only for the network it is decoded for, and to the
+// address of its cashaddr form.  The mainnet vectors are from BCHN's
+// dstencode_tests.cpp.
+func TestDecodeAddressLegacyP2SH32(t *testing.T) {
+	hash, _ := hex.DecodeString(
+		"80e10d3e13f5bf4e743aecd910c04e5dd9fee4184c4877163d0cc4c76b78d8f5")
+	const legacy = "BhUvhkQ6JwtVEdHguJo6M5BJYWn5ftW9vM9WaDDFcjrWiU2KMZ"
+	const cashaddr = "pwqwzrf7z06m7nn58tkdjyxqfewanlhyrpxysack85xvf3mt0rv02l9dxc5uf"
+	testnet := base58.CheckEncode(hash, chaincfg.TestNet4Params.LegacyScriptHashAddrID)
+
+	tests := []struct {
+		addr string
+		net  *chaincfg.Params
+	}{
+		{legacy, &chaincfg.MainNetParams},
+		{testnet, &chaincfg.TestNet4Params},
+		{testnet, &chaincfg.RegressionNetParams},
+	}
+	for _, test := range tests {
+		addr, err := bchutil.DecodeAddress(test.addr, test.net)
+		if err != nil {
+			t.Errorf("%s on %s: %v", test.addr, test.net.Name, err)
+			continue
+		}
+		want, err := bchutil.NewAddressScriptHash32FromHash(hash, test.net)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(addr, want) {
+			t.Errorf("%s on %s: decoded %#v, want %#v", test.addr,
+				test.net.Name, addr, want)
+		}
+	}
+	addr, err := bchutil.DecodeAddress(legacy, &chaincfg.MainNetParams)
+	if err == nil && addr.EncodeAddress() != cashaddr {
+		t.Errorf("%s: encoded as %s, want %s", legacy, addr.EncodeAddress(),
+			cashaddr)
+	}
+
+	// Another network's address and a 32-byte hash with the P2PKH version
+	// byte are refused.
+	invalid := []struct {
+		addr string
+		net  *chaincfg.Params
+	}{
+		{legacy, &chaincfg.TestNet4Params},
+		{testnet, &chaincfg.MainNetParams},
+		{base58.CheckEncode(hash, chaincfg.MainNetParams.LegacyPubKeyHashAddrID),
+			&chaincfg.MainNetParams},
+	}
+	for _, test := range invalid {
+		_, err := bchutil.DecodeAddress(test.addr, test.net)
+		if err != bchutil.ErrUnknownAddressType {
+			t.Errorf("%s on %s: got error %v, want %v", test.addr,
+				test.net.Name, err, bchutil.ErrUnknownAddressType)
+		}
+	}
+}
+
+// TestDecodeAddressSlpTokenAware ensures DecodeAddress refuses an SLP address
+// in a token-aware form, which SLP addresses do not have, with a 32-byte hash
+// as with a 20-byte one.
+func TestDecodeAddressSlpTokenAware(t *testing.T) {
+	params := &chaincfg.MainNetParams
+	pkh, err := bchutil.NewSlpAddressPubKeyHash(bytes.Repeat([]byte{0x22}, 20), params)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sh, err := bchutil.NewSlpAddressScriptHashFromHash(bytes.Repeat([]byte{0x33}, 20), params)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sh32, err := bchutil.NewSlpAddressScriptHash32FromHash(bytes.Repeat([]byte{0x44}, 32), params)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, addr := range []bchutil.TokenAwareAddress{pkh, sh, sh32} {
+		encoded := addr.EncodeCashAddress(true)
+		for _, s := range []string{encoded, params.SlpAddressPrefix + ":" + encoded} {
+			_, err := bchutil.DecodeAddress(s, params)
+			if err != bchutil.ErrUnknownAddressType {
+				t.Errorf("%s: got error %v, want %v", s, err,
+					bchutil.ErrUnknownAddressType)
+			}
+		}
+	}
+}
+
+// TestDecodeAddressShortCashAddr ensures DecodeAddress refuses a cashaddr
+// whose data part is shorter than the checksum but passes it, with the error
+// it gives other data parts that short.  No such data part passes with a
+// built-in network's prefix, but c:qvdy2z3 does with the prefix c.
+func TestDecodeAddressShortCashAddr(t *testing.T) {
+	net := chaincfg.MainNetParams
+	net.CashAddressPrefix = "c"
+	net.SlpAddressPrefix = "s"
+	for _, s := range []string{"c:qvdy2z3", "c:qvdy2z2"} {
+		_, err := bchutil.DecodeAddress(s, &net)
+		if err != bchutil.ErrChecksumMismatch {
+			t.Errorf("%s: got error %v, want %v", s, err,
+				bchutil.ErrChecksumMismatch)
 		}
 	}
 }

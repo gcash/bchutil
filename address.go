@@ -105,7 +105,8 @@ type TokenAwareAddress interface {
 
 // maxAddressLength is the length of the longest string DecodeAddress accepts,
 // an uncompressed public key in hex.  A cashaddr is at most 74 characters,
-// with the slp prefix and a 32-byte hash, and a base58 address at most 35.
+// with the slp prefix and a 32-byte hash, and a base58 address at most 51,
+// a P2SH32 on a test network.
 const maxAddressLength = 130
 
 // DecodeAddress decodes the string encoding of an address and returns
@@ -114,6 +115,9 @@ const maxAddressLength = 130
 // The bitcoin network the address is associated with is extracted if possible.
 // When the address does not encode the network, such as in the case of a raw
 // public key, the address will be associated with the passed defaultNet.
+//
+// A P2SH32 address in legacy form, which BCHN accepts too, is decoded only for
+// defaultNet, as an AddressScriptHash32, so it encodes as a cashaddr.
 func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 	bchPrefix := defaultNet.CashAddressPrefix
 	slpPrefix := defaultNet.SlpAddressPrefix
@@ -195,7 +199,7 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 				}
 			case sha256.Size: // P2SH32
 				switch typ {
-				case AddrTypePayToScriptHash, AddrTypeTokenPayToScriptHash:
+				case AddrTypePayToScriptHash:
 					return NewSlpAddressScriptHash32FromHash(decoded, defaultNet)
 				default:
 					return nil, ErrUnknownAddressType
@@ -243,6 +247,14 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 		default:
 			return nil, ErrUnknownAddressType
 		}
+
+	case sha256.Size: // P2SH32
+		// There is no legacy P2SH32 type, so the address takes defaultNet's
+		// cashaddr prefix, and only an address for defaultNet is accepted.
+		if netID != defaultNet.LegacyScriptHashAddrID {
+			return nil, ErrUnknownAddressType
+		}
+		return newAddressScriptHash32FromHash(decoded, defaultNet)
 
 	default:
 		return nil, errors.New("decoded address is of unknown size")
@@ -1223,6 +1235,12 @@ func DecodeCashAddress(str string) (string, []byte, error) {
 		}
 
 		values[i] = byte(CharsetRev[c])
+	}
+
+	// A data part shorter than the 8-character checksum can still pass the
+	// check below, as the prefix is part of it, so it is refused first.
+	if valuesSize < 8 {
+		return "", nil, ErrChecksumMismatch
 	}
 
 	// Verify the checksum.
