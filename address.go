@@ -21,18 +21,18 @@ var (
 	// to a bad checksum.
 	ErrChecksumMismatch = errors.New("checksum mismatch")
 
-	// ErrUnknownAddressType describes an error where an address can not
+	// ErrUnknownAddressType describes an error where an address can not be
 	// decoded as a specific address type due to the string encoding
-	// begining with an identifier byte unknown to any standard or
-	// registered (via chaincfg.Register) network.
+	// beginning with an identifier byte, or carrying a cashaddr type, that
+	// the network passed to DecodeAddress does not use.
 	ErrUnknownAddressType = errors.New("unknown address type")
 
 	// ErrAddressCollision describes an error where an address can not
 	// be uniquely determined as either a pay-to-pubkey-hash or
-	// pay-to-script-hash address since the leading identifier is used for
-	// describing both address kinds, but for different networks.  Rather
-	// than assuming or defaulting to one or the other, this error is
-	// returned and the caller must decide how to decode the address.
+	// pay-to-script-hash address since the network passed to DecodeAddress
+	// uses its leading identifier for both address kinds.  Rather than
+	// assuming or defaulting to one or the other, this error is returned
+	// and the caller must decide how to decode the address.
 	ErrAddressCollision = errors.New("address collision")
 
 	// ErrInvalidFormat describes an error where decoding failed due to invalid version
@@ -112,9 +112,12 @@ const maxAddressLength = 130
 // DecodeAddress decodes the string encoding of an address and returns
 // the Address if addr is a valid encoding for a known address type.
 //
-// The bitcoin network the address is associated with is extracted if possible.
-// When the address does not encode the network, such as in the case of a raw
-// public key, the address will be associated with the passed defaultNet.
+// Only addresses for defaultNet are decoded.  A cashaddr without a prefix is
+// given defaultNet's, and a legacy address must start with one of defaultNet's
+// identifier bytes, else ErrUnknownAddressType is returned.  Regtest, testnet3,
+// testnet4 and chipnet use the same legacy identifier bytes, so they decode
+// each other's legacy addresses.  A raw public key, which does not encode the
+// network, is associated with defaultNet.
 //
 // A P2SH32 address in legacy form, which BCHN accepts too, is decoded only for
 // defaultNet, as an AddressScriptHash32, so it encodes as a cashaddr.
@@ -235,8 +238,8 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 	}
 	switch len(decoded) {
 	case ripemd160.Size: // P2PKH or P2SH
-		isP2PKH := chaincfg.IsPubKeyHashAddrID(netID)
-		isP2SH := chaincfg.IsScriptHashAddrID(netID)
+		isP2PKH := netID == defaultNet.LegacyPubKeyHashAddrID
+		isP2SH := netID == defaultNet.LegacyScriptHashAddrID
 		switch hash160 := decoded; {
 		case isP2PKH && isP2SH:
 			return nil, ErrAddressCollision

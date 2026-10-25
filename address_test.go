@@ -7,6 +7,7 @@ package bchutil_test
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -739,6 +740,39 @@ func TestAddressPubKeyHashNetwork(t *testing.T) {
 		if !addr.AddressPubKeyHash().IsForNet(net) {
 			t.Errorf("%s: pubkey hash address %s is not for the network",
 				net.Name, addr.AddressPubKeyHash())
+		}
+	}
+}
+
+// TestDecodeLegacyAddressNetwork ensures a legacy address is only decoded for
+// a network that uses its identifier byte, which regtest and the test
+// networks share.
+func TestDecodeLegacyAddressNetwork(t *testing.T) {
+	tests := []struct {
+		addr string
+		net  *chaincfg.Params
+		err  error
+	}{
+		{"1MirQ9bwyQcGVJPwKUgapu5ouK2E2Ey4gX", &chaincfg.MainNetParams, nil},
+		{"1MirQ9bwyQcGVJPwKUgapu5ouK2E2Ey4gX", &chaincfg.TestNet3Params, bchutil.ErrUnknownAddressType},
+		{"3QJmV3qfvL9SuYo34YihAf3sRCW3qSinyC", &chaincfg.RegressionNetParams, bchutil.ErrUnknownAddressType},
+		{"mrX9vMRYLfVy1BnZbc5gZjuyaqH3ZW2ZHz", &chaincfg.MainNetParams, bchutil.ErrUnknownAddressType},
+		{"mrX9vMRYLfVy1BnZbc5gZjuyaqH3ZW2ZHz", &chaincfg.SimNetParams, bchutil.ErrUnknownAddressType},
+		{"2NBFNJTktNa7GZusGbDbGKRZTxdK9VVez3n", &chaincfg.MainNetParams, bchutil.ErrUnknownAddressType},
+		{"mrX9vMRYLfVy1BnZbc5gZjuyaqH3ZW2ZHz", &chaincfg.RegressionNetParams, nil},
+		{"mrX9vMRYLfVy1BnZbc5gZjuyaqH3ZW2ZHz", &chaincfg.TestNet4Params, nil},
+		{"2NBFNJTktNa7GZusGbDbGKRZTxdK9VVez3n", &chaincfg.ChipNetParams, nil},
+	}
+	for _, test := range tests {
+		addr, err := bchutil.DecodeAddress(test.addr, test.net)
+		if !errors.Is(err, test.err) {
+			t.Errorf("%s on %s: got error %v, want %v", test.addr,
+				test.net.Name, err, test.err)
+			continue
+		}
+		if err == nil && !addr.IsForNet(test.net) {
+			t.Errorf("%s on %s: decoded address is not for the network",
+				test.addr, test.net.Name)
 		}
 	}
 }
