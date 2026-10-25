@@ -21,10 +21,14 @@ import (
 	"time"
 )
 
+// listInterfaceAddrs returns the addresses of the network interfaces for
+// NewTLSCertPair.  Tests replace it.
+var listInterfaceAddrs = interfaceAddrs
+
 // NewTLSCertPair returns a new PEM-encoded x.509 certificate pair
 // based on a 256-bit ECDSA private key. The machine's local interface
-// addresses and all variants of IPv4 and IPv6 localhost are included as
-// valid IP addresses.
+// addresses, when the system allows reading them, and all variants of IPv4
+// and IPv6 localhost are included as valid IP addresses.
 //
 // 256-bit ECDSA is chosen so a single cert can support both RPC and gRPC
 // connections when auto generating certificates in bchd.
@@ -79,14 +83,16 @@ func NewTLSCertPair(organization string, validUntil time.Time, extraHosts []stri
 		dnsNames = append(dnsNames, host)
 	}
 
-	addrs, err := interfaceAddrs()
-	if err != nil {
-		return nil, nil, err
-	}
-	for _, a := range addrs {
-		ipAddr, _, err := net.ParseCIDR(a.String())
-		if err == nil {
-			addIP(ipAddr)
+	// Include the addresses of the network interfaces when they can be read.
+	// Some systems do not allow it, such as Android for apps targeting API 30
+	// or newer, and the certificate then covers the loopback addresses, the
+	// host name and extraHosts.
+	if addrs, err := listInterfaceAddrs(); err == nil {
+		for _, a := range addrs {
+			ipAddr, _, err := net.ParseCIDR(a.String())
+			if err == nil {
+				addIP(ipAddr)
+			}
 		}
 	}
 
