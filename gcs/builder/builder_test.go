@@ -580,3 +580,63 @@ var TestBlock = wire.MsgBlock{
 		},
 	},
 }
+
+// TestBuildBasicFilterTokens checks that the filter of a block with an output
+// that carries CashTokens has the output's locking script without the token
+// prefix, the script that a light client watching the address looks for, so
+// that it finds a payment of tokens. The block goes through the wire encoding,
+// which carries the token prefix in the output's script, as from a peer.
+func TestBuildBasicFilterTokens(t *testing.T) {
+	pkScript, err := txscript.NewScriptBuilder().
+		AddOp(txscript.OP_DUP).AddOp(txscript.OP_HASH160).
+		AddData(bytes.Repeat([]byte{0x11}, 20)).
+		AddOp(txscript.OP_EQUALVERIFY).AddOp(txscript.OP_CHECKSIG).Script()
+	if err != nil {
+		t.Fatal(err)
+	}
+	tokens := wire.TokenData{CategoryID: [32]byte{1}, Amount: 1000,
+		BitField: wire.HAS_AMOUNT}
+
+	coinbase := wire.NewMsgTx(1)
+	coinbase.AddTxIn(&wire.TxIn{
+		PreviousOutPoint: wire.OutPoint{Index: wire.MaxPrevOutIndex},
+		SignatureScript:  []byte{txscript.OP_TRUE, txscript.OP_TRUE},
+	})
+	coinbase.AddTxOut(wire.NewTxOut(5000000000, []byte{txscript.OP_TRUE},
+		wire.TokenData{}))
+	tx := wire.NewMsgTx(2)
+	tx.AddTxIn(&wire.TxIn{PreviousOutPoint: wire.OutPoint{Hash: chainhash.Hash{2}}})
+	tx.AddTxOut(wire.NewTxOut(1000, pkScript, tokens))
+	block := wire.MsgBlock{
+		Header:       wire.BlockHeader{Version: 1, Timestamp: time.Unix(1700000000, 0)},
+		Transactions: []*wire.MsgTx{coinbase, tx},
+	}
+
+	var buf bytes.Buffer
+	if err := block.Serialize(&buf); err != nil {
+		t.Fatal(err)
+	}
+	prefixed := append([]byte{0xef}, tokens.CategoryID[:]...)
+	if !bytes.Contains(buf.Bytes(), prefixed) {
+		t.Fatal("the encoded block has no output with the token prefix")
+	}
+	var decoded wire.MsgBlock
+	if err := decoded.Deserialize(bytes.NewReader(buf.Bytes())); err != nil {
+		t.Fatal(err)
+	}
+
+	filter, err := builder.BuildBasicFilter(&decoded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	blockHash := decoded.BlockHash()
+	key := builder.DeriveKey(&blockHash)
+	matches, err := filter.Match(key, pkScript)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !matches {
+		t.Error("the filter doesn't have the locking script of the output " +
+			"with tokens")
+	}
+}
