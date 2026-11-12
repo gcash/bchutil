@@ -65,9 +65,7 @@ func scriptFilterBlock() (*wire.MsgBlock, [][]byte) {
 	last.AddTxOut(wire.NewTxOut(900, scriptB, wire.TokenData{}))
 
 	block := wire.NewMsgBlock(&wire.BlockHeader{Version: 4, Timestamp: TestBlock.Header.Timestamp})
-	block.AddTransaction(coinbase)
-	block.AddTransaction(tokens)
-	block.AddTransaction(last)
+	block.Transactions = []*wire.MsgTx{coinbase, tokens, last}
 
 	prevOutScripts := [][]byte{
 		prefixed(fungible(categoryC, 100), scriptA),
@@ -207,8 +205,7 @@ func TestBuildScriptFilterSpendOnly(t *testing.T) {
 	spender.AddTxIn(spend(7))
 	spender.AddTxOut(wire.NewTxOut(100, scriptB, wire.TokenData{}))
 	only := wire.NewMsgBlock(&block.Header)
-	only.AddTransaction(block.Transactions[0])
-	only.AddTransaction(spender)
+	only.Transactions = []*wire.MsgTx{block.Transactions[0], spender}
 
 	wallet := append([]byte{0xa9, 0x14}, bytes.Repeat([]byte{0x77}, 20)...)
 	wallet = append(wallet, 0x87)
