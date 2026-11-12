@@ -16,8 +16,9 @@ import (
 // A peer shows what a block's entry tree holds without sending the block: a
 // run of consecutive leaves, with the hashes on the run's edges, rebuilds the
 // root. The run of leaves whose keys start with a prefix, with the leaf just
-// before it and the leaf just after it, also shows that the tree holds no
-// other leaf with that prefix. A run of one leaf is that leaf's branch.
+// before it and the leaf just after it, also shows that a tree whose leaves
+// are in order holds no other leaf with that prefix. A run of one leaf is
+// that leaf's branch.
 
 var (
 	// ErrScriptLeaf is returned for a serialized leaf of the wrong size or
@@ -183,7 +184,10 @@ func ScriptRangeRoot(count, lo uint32, run []ScriptLeaf, hashes []chainhash.Hash
 // the run of them from index first whose keys start with the prefix. before
 // and after are the leaves next to the run: before is given exactly when first
 // is above 0, and after exactly when the run ends before the last leaf. When
-// it returns nil, the tree holds no other leaf with the prefix.
+// it returns nil, a tree whose leaves are in order holds no other leaf with
+// the prefix. The leaves the reply doesn't show are not checked here. A tree
+// with leaves out of order is not the one the block gives, and has another
+// root.
 //
 // ErrScriptRangeRoot means the reply doesn't belong to that root.
 // ErrScriptRangeLeaves means the leaves do rebuild the root, so they are the
