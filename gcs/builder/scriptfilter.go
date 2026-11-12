@@ -142,49 +142,11 @@ func ScriptLeaves(block *wire.MsgBlock, prevOutScripts [][]byte) ([]ScriptLeaf, 
 	var leaves []ScriptLeaf
 	spent := 0
 	for i, tx := range block.Transactions {
-		txIndex := uint32(i)
-		if i > 0 {
-			for j := range tx.TxIn {
-				if spent >= len(prevOutScripts) {
-					return nil, ErrPrevOutScripts
-				}
-				tokenData, script := wire.SplitPkScript(prevOutScripts[spent])
-				spent++
-				if filtersScript(script) {
-					leaves = append(leaves, ScriptLeaf{
-						Key:     ScriptKey(script),
-						TxIndex: txIndex,
-						Index:   uint32(j),
-						Kind:    ScriptLeafSpent,
-					})
-				}
-				if !tokenData.IsEmpty() {
-					leaves = append(leaves, ScriptLeaf{
-						Key:     CategoryKey(tokenData.CategoryID),
-						TxIndex: txIndex,
-						Index:   uint32(j),
-						Kind:    ScriptLeafSpentCategory,
-					})
-				}
-			}
-		}
-		for j, txOut := range tx.TxOut {
-			if filtersScript(txOut.PkScript) {
-				leaves = append(leaves, ScriptLeaf{
-					Key:     ScriptKey(txOut.PkScript),
-					TxIndex: txIndex,
-					Index:   uint32(j),
-					Kind:    ScriptLeafOutput,
-				})
-			}
-			if !txOut.TokenData.IsEmpty() {
-				leaves = append(leaves, ScriptLeaf{
-					Key:     CategoryKey(txOut.TokenData.CategoryID),
-					TxIndex: txIndex,
-					Index:   uint32(j),
-					Kind:    ScriptLeafOutputCategory,
-				})
-			}
+		var err error
+		leaves, spent, err = appendScriptLeaves(leaves, tx, uint32(i), i == 0,
+			prevOutScripts, spent)
+		if err != nil {
+			return nil, err
 		}
 	}
 	if spent != len(prevOutScripts) {
@@ -192,6 +154,59 @@ func ScriptLeaves(block *wire.MsgBlock, prevOutScripts [][]byte) ([]ScriptLeaf, 
 	}
 	slices.SortFunc(leaves, compareScriptLeaves)
 	return leaves, nil
+}
+
+// appendScriptLeaves appends the leaves of the transaction at txIndex: those
+// of the outputs it spends, unless it is a coinbase, then those of its
+// outputs. The scripts of the outputs it spends are read from prevOutScripts
+// from index spent on, and it returns the index after the last one it read.
+func appendScriptLeaves(leaves []ScriptLeaf, tx *wire.MsgTx, txIndex uint32, coinbase bool,
+	prevOutScripts [][]byte, spent int) ([]ScriptLeaf, int, error) {
+
+	if !coinbase {
+		for j := range tx.TxIn {
+			if spent >= len(prevOutScripts) {
+				return nil, 0, ErrPrevOutScripts
+			}
+			tokenData, script := wire.SplitPkScript(prevOutScripts[spent])
+			spent++
+			if filtersScript(script) {
+				leaves = append(leaves, ScriptLeaf{
+					Key:     ScriptKey(script),
+					TxIndex: txIndex,
+					Index:   uint32(j),
+					Kind:    ScriptLeafSpent,
+				})
+			}
+			if !tokenData.IsEmpty() {
+				leaves = append(leaves, ScriptLeaf{
+					Key:     CategoryKey(tokenData.CategoryID),
+					TxIndex: txIndex,
+					Index:   uint32(j),
+					Kind:    ScriptLeafSpentCategory,
+				})
+			}
+		}
+	}
+	for j, txOut := range tx.TxOut {
+		if filtersScript(txOut.PkScript) {
+			leaves = append(leaves, ScriptLeaf{
+				Key:     ScriptKey(txOut.PkScript),
+				TxIndex: txIndex,
+				Index:   uint32(j),
+				Kind:    ScriptLeafOutput,
+			})
+		}
+		if !txOut.TokenData.IsEmpty() {
+			leaves = append(leaves, ScriptLeaf{
+				Key:     CategoryKey(txOut.TokenData.CategoryID),
+				TxIndex: txIndex,
+				Index:   uint32(j),
+				Kind:    ScriptLeafOutputCategory,
+			})
+		}
+	}
+	return leaves, spent, nil
 }
 
 // ScriptLeafHash returns the hash of a leaf in the entry tree: the SHA-256 of
