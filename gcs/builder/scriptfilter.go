@@ -225,17 +225,24 @@ func ScriptLeavesRoot(leaves []ScriptLeaf) chainhash.Hash {
 		level[i] = ScriptLeafHash(&leaves[i])
 	}
 	for len(level) > 1 {
-		next := level[:0]
-		for i := 0; i < len(level); i += 2 {
-			if i+1 == len(level) {
-				next = append(next, level[i])
-				continue
-			}
-			next = append(next, ScriptNodeHash(&level[i], &level[i+1]))
-		}
-		level = next
+		level = scriptNextLevel(level)
 	}
 	return level[0]
+}
+
+// scriptNextLevel hashes a level of the entry tree into the level above it,
+// in place: each pair of nodes becomes their parent, and a last node without a
+// partner moves up unchanged.
+func scriptNextLevel(level []chainhash.Hash) []chainhash.Hash {
+	next := level[:0]
+	for i := 0; i < len(level); i += 2 {
+		if i+1 == len(level) {
+			next = append(next, level[i])
+			continue
+		}
+		next = append(next, ScriptNodeHash(&level[i], &level[i+1]))
+	}
+	return next
 }
 
 // BuildScriptFilter builds a block's script filter from its leaves: a GCS
