@@ -14,8 +14,8 @@ import (
 	"github.com/gcash/bchutil/gcs/builder"
 )
 
-// scriptRangeTestLeaves returns the ten sorted leaves of the test block and
-// their root.
+// scriptRangeTestLeaves returns the thirteen sorted leaves of the test block
+// and their root.
 func scriptRangeTestLeaves(t *testing.T) ([]builder.ScriptLeaf, chainhash.Hash) {
 	t.Helper()
 	block, prevOutScripts := scriptFilterBlock()
@@ -23,14 +23,14 @@ func scriptRangeTestLeaves(t *testing.T) ([]builder.ScriptLeaf, chainhash.Hash) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(leaves) != 10 {
-		t.Fatalf("got %d leaves, want 10", len(leaves))
+	if len(leaves) != 13 {
+		t.Fatalf("got %d leaves, want 13", len(leaves))
 	}
 	return leaves, builder.ScriptLeavesRoot(leaves)
 }
 
 // TestScriptRangeHashes checks the edge hashes of runs of the test block's
-// ten leaves against a separate implementation of the tree, which lists, level
+// thirteen leaves against a separate implementation of the tree, which lists, level
 // by level, every node whose partner the run covers.
 func TestScriptRangeHashes(t *testing.T) {
 	leaves, root := scriptRangeTestLeaves(t)
@@ -40,33 +40,33 @@ func TestScriptRangeHashes(t *testing.T) {
 		hashes  []string
 	}{
 		{"leaves 3 to 5", 3, 6, []string{
-			"2512bd80ee8cef99a54e819ae61fdba6da828e4f874b8ecba5e47559c616c476",
+			"bc06de9a175f996d79d0469c45159b5a136c4087bf8f3caff3da391796d7b481",
 			"e5c9cff033bb91a3f42a868728b860c8a4eb1e6047d483b7b3a066f694f2180e",
-			"9321aa6706ebb15995fd96c21947d13ac08de5651b28424e013249562233b815",
-			"a3906f23297e3c240c522789fe69efeb3f125de38ed0627c8a02458599b47fb2",
+			"7fa40cb37ecdbeaaf92ea60c633b2865db56d1491be3a35a362f10b37ff451dc",
+			"e9639e41195ffb0b1f64cdcf9f9f0c318bdcdaa7da3a9b37e2292a5e3d932b7c",
 		}},
-		// The last leaf has no partner at the first level, and moves up.
-		{"leaf 9", 9, 10, []string{
-			"93aba49a21f3ff1d74de4f2ddfd5996c106cced8d8271325333fd507c7580a29",
-			"bc683ecc5d6d6a2e7a734da1f2d778330e467c2ef845e2ef04dbdb86dc4b90f3",
+		// The last leaf has no partner at the first two levels, and moves up.
+		{"leaf 12", 12, 13, []string{
+			"d9e2df3fd0725059985ccc95dc990bffca55ef321eab8caafb6f2daea6022b99",
+			"5c4ea30b1be5df50e4885834e104ea560df8fc1fccc241c7702aea4e74fe7f94",
 		}},
 		{"leaf 0", 0, 1, []string{
 			"2892d10bbf543b5b6acb23ef107edeb7ed945fdd1cb928a0ce4c5390c75b5ca0",
-			"560371e2c34b9f6c70d4c978410b91dfa757234e81a4c7553690fa75f2fe20fd",
-			"0c661e38a5a8a7b99ecc5a4ef8edf3ed232a443151a05da5feee0993377117c5",
-			"a3906f23297e3c240c522789fe69efeb3f125de38ed0627c8a02458599b47fb2",
+			"1e16bc5cb2c8ac67c08845267a55c3f7ff21ce8d405901f506a181766ab5b0fe",
+			"d86f36e990d6b2c6dea6f0e7111c6271963b6a566f70e961a2dc675ab60b1e94",
+			"e9639e41195ffb0b1f64cdcf9f9f0c318bdcdaa7da3a9b37e2292a5e3d932b7c",
 		}},
 		{"leaves 3 to 7", 3, 8, []string{
-			"2512bd80ee8cef99a54e819ae61fdba6da828e4f874b8ecba5e47559c616c476",
+			"bc06de9a175f996d79d0469c45159b5a136c4087bf8f3caff3da391796d7b481",
 			"e5c9cff033bb91a3f42a868728b860c8a4eb1e6047d483b7b3a066f694f2180e",
-			"a3906f23297e3c240c522789fe69efeb3f125de38ed0627c8a02458599b47fb2",
+			"e9639e41195ffb0b1f64cdcf9f9f0c318bdcdaa7da3a9b37e2292a5e3d932b7c",
 		}},
 		{"leaves 6 and 7", 6, 8, []string{
-			"7fa40cb37ecdbeaaf92ea60c633b2865db56d1491be3a35a362f10b37ff451dc",
-			"1cbf127a61c9b772d854662f32960f9bf4c05934e10b3c3b69b4075d6ed5e964",
-			"a3906f23297e3c240c522789fe69efeb3f125de38ed0627c8a02458599b47fb2",
+			"560371e2c34b9f6c70d4c978410b91dfa757234e81a4c7553690fa75f2fe20fd",
+			"b6692d0b9854040529181ac8543dc25625365ea81e0d74e1e4a158f038b17eba",
+			"e9639e41195ffb0b1f64cdcf9f9f0c318bdcdaa7da3a9b37e2292a5e3d932b7c",
 		}},
-		{"every leaf", 0, 10, nil},
+		{"every leaf", 0, 13, nil},
 	}
 	for _, test := range tests {
 		hashes, err := builder.ScriptRangeHashes(leaves, test.lo, test.end)
@@ -81,13 +81,13 @@ func TestScriptRangeHashes(t *testing.T) {
 				t.Errorf("%s: hash %d is %x, want %s", test.name, i, hashes[i][:], test.hashes[i])
 			}
 		}
-		got, err := builder.ScriptRangeRoot(10, uint32(test.lo), leaves[test.lo:test.end], hashes)
+		got, err := builder.ScriptRangeRoot(13, uint32(test.lo), leaves[test.lo:test.end], hashes)
 		if err != nil || got != root {
 			t.Errorf("%s: rebuilt root %x, %v; want %x", test.name, got[:], err, root[:])
 		}
 	}
 
-	for _, bad := range [][2]int{{-1, 1}, {3, 3}, {4, 3}, {0, 11}} {
+	for _, bad := range [][2]int{{-1, 1}, {3, 3}, {4, 3}, {0, 14}} {
 		if _, err := builder.ScriptRangeHashes(leaves, bad[0], bad[1]); !errors.Is(err, builder.ErrScriptRange) {
 			t.Errorf("run %d to %d: got %v", bad[0], bad[1], err)
 		}
@@ -189,11 +189,11 @@ func TestCheckScriptRange(t *testing.T) {
 		bits       uint16
 		first, end int
 	}{
-		{"every leaf", prefixOf(), 0, 0, 10},
+		{"every leaf", prefixOf(), 0, 0, 13},
 		{"first 4 bits 0001", prefixOf(0x10), 4, 0, 2},
-		{"first byte 5c", prefixOf(0x5c), 8, 4, 7},
-		{"first byte 80, which no key has", prefixOf(0x80), 8, 7, 7},
-		{"first byte ff, past the last key", prefixOf(0xff), 8, 10, 10},
+		{"first byte 5c", prefixOf(0x5c), 8, 6, 9},
+		{"first byte 80, which no key has", prefixOf(0x80), 8, 10, 10},
+		{"first byte ff, past the last key", prefixOf(0xff), 8, 13, 13},
 		{"the first leaf's whole key", &exact, 256, 0, 2},
 	}
 	for _, test := range tests {
@@ -212,15 +212,15 @@ func TestCheckScriptRange(t *testing.T) {
 
 	// Leaving out the run's last leaf: it becomes the after neighbour, which
 	// has the prefix.
-	shorter := scriptRange{count: 10, first: 4, run: leaves[4:6], before: &leaves[3], after: &leaves[6]}
-	shorter.hashes, _ = builder.ScriptRangeHashes(leaves, 3, 7)
+	shorter := scriptRange{count: 13, first: 6, run: leaves[6:8], before: &leaves[5], after: &leaves[8]}
+	shorter.hashes, _ = builder.ScriptRangeHashes(leaves, 5, 9)
 	if err := shorter.check(root, p5c, 8); !errors.Is(err, builder.ErrScriptRangeLeaves) {
 		t.Errorf("a leaf left out: %v", err)
 	}
 
 	// Claiming no leaf has the prefix.
-	absent := scriptRange{count: 10, first: 4, before: &leaves[3], after: &leaves[4]}
-	absent.hashes, _ = builder.ScriptRangeHashes(leaves, 3, 5)
+	absent := scriptRange{count: 13, first: 6, before: &leaves[5], after: &leaves[6]}
+	absent.hashes, _ = builder.ScriptRangeHashes(leaves, 5, 7)
 	if err := absent.check(root, p5c, 8); !errors.Is(err, builder.ErrScriptRangeLeaves) {
 		t.Errorf("a key claimed absent: %v", err)
 	}
@@ -283,7 +283,58 @@ func TestParseScriptLeaf(t *testing.T) {
 		t.Errorf("40 bytes: %v", err)
 	}
 	b[40] = 4
-	if _, err := builder.ParseScriptLeaf(b[:]); !errors.Is(err, builder.ErrScriptLeaf) {
-		t.Errorf("kind 4: %v", err)
+	if got, err := builder.ParseScriptLeaf(b[:]); err != nil || got.Kind != builder.ScriptLeafTransaction {
+		t.Errorf("kind 4: %+v, %v", got, err)
+	}
+	for _, kind := range []byte{5, 0x80, 0xff} {
+		b[40] = kind
+		if _, err := builder.ParseScriptLeaf(b[:]); !errors.Is(err, builder.ErrScriptLeaf) {
+			t.Errorf("kind %d: %v", kind, err)
+		}
+	}
+}
+
+// TestCheckScriptRangeTxid asks for the whole key of each transaction's ID,
+// as a client that looks a transaction up would: the answer is exactly that
+// transaction's leaf, and it checks against the root. The key of an ID the
+// block doesn't have gives no leaf, and a peer can't claim a present one
+// absent.
+func TestCheckScriptRangeTxid(t *testing.T) {
+	block, _ := scriptFilterBlock()
+	leaves, root := scriptRangeTestLeaves(t)
+	for i, tx := range block.Transactions {
+		key := builder.TxidKey(tx.TxHash())
+		r := honestScriptRange(t, leaves, &key, 256)
+		want := builder.ScriptLeaf{Key: key, TxIndex: uint32(i), Kind: builder.ScriptLeafTransaction}
+		if len(r.run) != 1 || r.run[0] != want {
+			t.Errorf("transaction %d: run %+v, want only %+v", i, r.run, want)
+			continue
+		}
+		if err := r.check(root, &key, 256); err != nil {
+			t.Errorf("transaction %d: %v", i, err)
+		}
+
+		// No leaf claimed where the transaction's is: that leaf is then the
+		// neighbour after, and has the key.
+		first := int(r.first)
+		absent := scriptRange{count: r.count, first: r.first, after: &leaves[first]}
+		lo := first
+		if first > 0 {
+			absent.before = &leaves[first-1]
+			lo--
+		}
+		absent.hashes, _ = builder.ScriptRangeHashes(leaves, lo, first+1)
+		if err := absent.check(root, &key, 256); !errors.Is(err, builder.ErrScriptRangeLeaves) {
+			t.Errorf("transaction %d claimed absent: %v", i, err)
+		}
+	}
+
+	missing := builder.TxidKey(chainhash.Hash{0x77})
+	r := honestScriptRange(t, leaves, &missing, 256)
+	if len(r.run) != 0 {
+		t.Fatalf("an ID the block doesn't have: run %+v", r.run)
+	}
+	if err := r.check(root, &missing, 256); err != nil {
+		t.Errorf("an ID the block doesn't have: %v", err)
 	}
 }

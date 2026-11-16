@@ -23,7 +23,7 @@ import (
 var (
 	// ErrScriptLeaf is returned for a serialized leaf of the wrong size or
 	// of an unknown kind.
-	ErrScriptLeaf = errors.New("a script filter leaf is 41 bytes, of kind 0 to 3")
+	ErrScriptLeaf = errors.New("a script filter leaf is 41 bytes, of kind 0 to 4")
 
 	// ErrScriptPrefix is returned for a key prefix longer than 256 bits, or
 	// with a bit set past its length.
@@ -46,7 +46,7 @@ var (
 
 // ParseScriptLeaf parses a leaf serialized by ScriptLeaf.Bytes.
 func ParseScriptLeaf(b []byte) (ScriptLeaf, error) {
-	if len(b) != ScriptLeafSize || b[40] > byte(ScriptLeafSpentCategory) {
+	if len(b) != ScriptLeafSize || b[40] > byte(ScriptLeafTransaction) {
 		return ScriptLeaf{}, ErrScriptLeaf
 	}
 	var leaf ScriptLeaf
