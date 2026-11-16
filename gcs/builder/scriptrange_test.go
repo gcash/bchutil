@@ -30,8 +30,8 @@ func scriptRangeTestLeaves(t *testing.T) ([]builder.ScriptLeaf, chainhash.Hash) 
 }
 
 // TestScriptRangeHashes checks the edge hashes of runs of the test block's
-// thirteen leaves against a separate implementation of the tree, which lists, level
-// by level, every node whose partner the run covers.
+// thirteen leaves against a separate implementation of the tree, which lists,
+// level by level, every node whose partner the run covers.
 func TestScriptRangeHashes(t *testing.T) {
 	leaves, root := scriptRangeTestLeaves(t)
 	tests := []struct {
