@@ -15,7 +15,8 @@ import (
 // the keys they would have in a block's script filter, keyed by hash, with the
 // same P, M and serialization. A wallet matches it with its own scripts and
 // token categories, as it matches a block's, and fetches the transactions
-// only when it matches.
+// only when it matches. Each transaction's ID is in it too, under the key a
+// block's filter has for it.
 //
 // prevOutScripts holds the scripts of the outputs the transactions spend,
 // with any token prefix in front, in order of the transactions and of their
