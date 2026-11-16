@@ -6,6 +6,7 @@ package builder_test
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"testing"
@@ -80,11 +81,14 @@ func scriptFilterBlock() (*wire.MsgBlock, [][]byte) {
 var scriptFilterLeaves = []string{
 	"11633077d74aa1a6958c6f1162c9e935c628c6b004d167165f0a4cccd020eecb010000000000000000",
 	"11633077d74aa1a6958c6f1162c9e935c628c6b004d167165f0a4cccd020eecb020000000000000001",
+	"2408f309be44080bfa3bb2af14c6725ed1f8f4e46f1af24b4be3488061398758000000000000000004",
+	"29793475c422842053b828ed76beb29702bcd1aefffa403ae6c3762f04921716020000000000000004",
 	"46402f61b3239cd80b93294e10b552d66a31b79c8fe7fdd92a832d00f832e82e010000000100000001",
 	"46402f61b3239cd80b93294e10b552d66a31b79c8fe7fdd92a832d00f832e82e020000000000000000",
 	"5c1b924542fecd099a9568826bce5018476b3c2a29944c9c7ff6e47f80d21d24010000000000000002",
 	"5c1b924542fecd099a9568826bce5018476b3c2a29944c9c7ff6e47f80d21d24010000000000000003",
 	"5c1b924542fecd099a9568826bce5018476b3c2a29944c9c7ff6e47f80d21d24020000000000000003",
+	"6b1601808de128a10737cdea9a192ad5e5e47d37cf06349b37aa57f968f2e39f010000000000000004",
 	"e2f6c234985456932db846b2bf1a2fed2cb98b5b0f246f30711ea6148a76860e000000000000000000",
 	"e2f6c234985456932db846b2bf1a2fed2cb98b5b0f246f30711ea6148a76860e010000000000000001",
 	"e2f6c234985456932db846b2bf1a2fed2cb98b5b0f246f30711ea6148a76860e010000000100000000",
@@ -116,6 +120,55 @@ func TestScriptLeaves(t *testing.T) {
 	if hex.EncodeToString(keyC[:]) != "5c1b924542fecd099a9568826bce5018476b3c2a29944c9c7ff6e47f80d21d24" {
 		t.Fatalf("key of category C: %x", keyC)
 	}
+
+	// Every transaction, the coinbase included, has one leaf of its ID, at
+	// its own position, with index 0.
+	for i, tx := range block.Transactions {
+		var found []builder.ScriptLeaf
+		for _, leaf := range leaves {
+			if leaf.Kind == builder.ScriptLeafTransaction && leaf.TxIndex == uint32(i) {
+				found = append(found, leaf)
+			}
+		}
+		want := builder.TxidKey(tx.TxHash())
+		if len(found) != 1 || found[0].Key != want || found[0].Index != 0 {
+			t.Errorf("transaction %d: leaves of its ID %+v, want one with key %x and index 0",
+				i, found, want)
+		}
+	}
+}
+
+// The key of a transaction is the SHA-256 of 0x02 and its ID in internal
+// byte order. The genesis block's coinbase is
+// 4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b as
+// displayed, and its key was worked out apart from this package.
+func TestTxidKey(t *testing.T) {
+	txid, err := chainhash.NewHashFromStr("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b")
+	if err != nil {
+		t.Fatal(err)
+	}
+	key := builder.TxidKey(*txid)
+	const want = "025ed1aacae75dea93415773bb9a23b3942e03ef36aebc59acb67406902d03ce"
+	if hex.EncodeToString(key[:]) != want {
+		t.Fatalf("key of the genesis coinbase: %x, want %s", key, want)
+	}
+	tagged := sha256.Sum256(append([]byte{0x02}, txid[:]...))
+	if key != tagged {
+		t.Fatalf("key %x is not the SHA-256 of 0x02 and the ID, %x", key, tagged)
+	}
+
+	// The ID is taken in internal byte order, not as displayed, and the
+	// key of a token category whose ID is the same differs.
+	var displayed chainhash.Hash
+	for i := range displayed {
+		displayed[i] = txid[chainhash.HashSize-1-i]
+	}
+	if builder.TxidKey(displayed) == key {
+		t.Fatal("the key does not depend on the byte order of the ID")
+	}
+	if builder.CategoryKey(*txid) == key || builder.ScriptKey(txid[:]) == key {
+		t.Fatal("a transaction's key equals the key of its ID as a category or a script")
+	}
 }
 
 func TestScriptLeavesRoot(t *testing.T) {
@@ -132,9 +185,10 @@ func TestScriptLeavesRoot(t *testing.T) {
 		{0, "0000000000000000000000000000000000000000000000000000000000000000"},
 		{1, "9d1f540224023621706bc5c9a4cb19c21abb295d62aebaa75137bbcb44dadfb5"},
 		{2, "e5c9cff033bb91a3f42a868728b860c8a4eb1e6047d483b7b3a066f694f2180e"},
-		{3, "bbf4f9772400cd1355cfd4c39fb37e5f03a63e2452b1ca97deba45d475771dc2"},
-		{5, "378bce73f320bd2b71796e5731f6e91d71e42ecf0513d1912f0e9439fb52a2b9"},
-		{10, "f66125233da123c29e93f9510c96557d5edfc071225ea7796c86e6deba8c23fd"},
+		{3, "907cad6618a8f3ede71fa62a7169f055a19ebb073270e1693231429c719be61d"},
+		{5, "bbc9efc7bb3eb741dc7ca721578860c688eeb07cdb49ceea332467f70cb2f9a3"},
+		{10, "69f2a3d4cdb63540fd67dead5141b47277a37aef1e2636c52e8ef56f25522dfb"},
+		{13, "b0b1eb8ae0f0a27876a014e84906f626d6b77028c8197763cb4f6c13b5041d3d"},
 	}
 	for _, test := range tests {
 		root := builder.ScriptLeavesRoot(leaves[:test.n])
@@ -157,9 +211,9 @@ func TestBuildScriptFilterMatches(t *testing.T) {
 		t.Fatalf("root %v is not the root of the block's leaves", root)
 	}
 
-	// A, B, D and the category, each once.
-	if filter.N() != 4 {
-		t.Fatalf("filter has %d entries, want 4", filter.N())
+	// A, B, D and the category, each once, and the three transactions.
+	if filter.N() != 7 {
+		t.Fatalf("filter has %d entries, want 7", filter.N())
 	}
 
 	blockHash := block.BlockHash()
@@ -168,7 +222,11 @@ func TestBuildScriptFilterMatches(t *testing.T) {
 	keyC := builder.CategoryKey(categoryC)
 	keyD := builder.ScriptKey(scriptD)
 	keyA := builder.ScriptKey(scriptA)
-	for _, item := range [][32]byte{keyA, keyB, keyC, keyD} {
+	items := [][32]byte{keyA, keyB, keyC, keyD}
+	for _, tx := range block.Transactions {
+		items = append(items, builder.TxidKey(tx.TxHash()))
+	}
+	for _, item := range items {
 		match, err := filter.Match(key, item[:])
 		if err != nil {
 			t.Fatal(err)
@@ -186,7 +244,15 @@ func TestBuildScriptFilterMatches(t *testing.T) {
 	if err := block.Transactions[1].TxIn[0].PreviousOutPoint.Serialize(&outpoint); err != nil {
 		t.Fatal(err)
 	}
-	for _, item := range [][]byte{opReturn[:], empty[:], outpoint.Bytes(), scriptA} {
+	// A transaction is in it by the key of its ID in internal byte order,
+	// not by the ID itself nor by the key of the ID as displayed.
+	txid := block.Transactions[1].TxHash()
+	displayed, err := chainhash.NewHashFromStr(hex.EncodeToString(txid[:]))
+	if err != nil {
+		t.Fatal(err)
+	}
+	displayedKey := builder.TxidKey(*displayed)
+	for _, item := range [][]byte{opReturn[:], empty[:], outpoint.Bytes(), scriptA, txid[:], displayedKey[:]} {
 		match, err := filter.Match(key, item)
 		if err != nil {
 			t.Fatal(err)
@@ -248,7 +314,7 @@ func TestMakeHeaderForScriptFilter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if hex.EncodeToString(filterBytes) != "0499ff80bec18387496fab00" {
+	if hex.EncodeToString(filterBytes) != "07cebf94a6e9031661043903d7cd355e4ee520" {
 		t.Fatalf("filter %x", filterBytes)
 	}
 
@@ -257,8 +323,8 @@ func TestMakeHeaderForScriptFilter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	const wantServed = "f66125233da123c29e93f9510c96557d5edfc071225ea7796c86e6deba8c23fd" +
-		"0499ff80bec18387496fab00"
+	const wantServed = "b0b1eb8ae0f0a27876a014e84906f626d6b77028c8197763cb4f6c13b5041d3d" +
+		"07cebf94a6e9031661043903d7cd355e4ee520"
 	if hex.EncodeToString(served) != wantServed {
 		t.Fatalf("served %x", served)
 	}
@@ -266,7 +332,7 @@ func TestMakeHeaderForScriptFilter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if hex.EncodeToString(filterHash[:]) != "4ddf591081b2cf7e4ed907dd61b4626d45aa34a1d6c34ef3d475e97b4fc1745f" {
+	if hex.EncodeToString(filterHash[:]) != "efda295187e26a5cc26e977352d97d8b74e1a59bcd82f3396521ffd9ab9b5444" {
 		t.Fatalf("filter hash %x", filterHash[:])
 	}
 
@@ -278,8 +344,8 @@ func TestMakeHeaderForScriptFilter(t *testing.T) {
 		prev   chainhash.Hash
 		header string
 	}{
-		{chainhash.Hash{}, "a92dc54cdf66fdf505a4c7acdb432becbc5f2756fb3ba0bc0fa74694888f6829"},
-		{counting, "1a234486b2eec2c3c45e871a2ccb3f12ad9e8a0755fc1a42e6dffbebd5f09f26"},
+		{chainhash.Hash{}, "31bf06e3a313b4a69ae63d7065c4f261dbe76f498d62c1fa5f1c40e50c976af4"},
+		{counting, "3b5c87c739ea1dca7f2c253c9b2ad3b1fc09644eb2f0e833482e93a091e9ac13"},
 	}
 	for _, test := range tests {
 		header, err := builder.MakeHeaderForScriptFilter(filter, root, test.prev)
