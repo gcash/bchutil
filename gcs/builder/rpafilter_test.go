@@ -194,9 +194,6 @@ func TestRPAFilterBlocks(t *testing.T) {
 		if err != nil || !slices.Equal(decoded, test.values) {
 			t.Errorf("%s: decoded %04x, %v", test.name, decoded, err)
 		}
-		if !builder.RPAFilterCanonical(filter, decoded) {
-			t.Errorf("%s: the filter a block gives is not canonical", test.name)
-		}
 	}
 
 	// Only the first 30 inputs of a transaction count: the 31st input's
@@ -247,9 +244,8 @@ func TestRPAFilterLarge(t *testing.T) {
 }
 
 // TestRPAFilterAccepted decodes encodings the decoder takes: single values
-// at both ends, two values, every even value, every value, and one whose
-// Rice parameter is not the one its count gives, which decodes but is not
-// canonical and has another hash.
+// at both ends, two values, every even value and every value, each the one
+// encoding of its values.
 func TestRPAFilterAccepted(t *testing.T) {
 	even := make([]uint16, 0, 32768)
 	every := make([]uint16, 0, 65536)
@@ -260,24 +256,21 @@ func TestRPAFilterAccepted(t *testing.T) {
 		every = append(every, uint16(v))
 	}
 	tests := []struct {
-		name      string
-		values    []uint16
-		data      []byte
-		canonical bool
-		hash      string
+		name   string
+		values []uint16
+		data   []byte
+		hash   string
 	}{
-		{"value 0", []uint16{0}, rpaHex(t, "010f0000"), true,
+		{"value 0", []uint16{0}, rpaHex(t, "010f0000"),
 			"d765bddba686b5d7a4eee92e6da5c4cf23f3fb5d272b71b478d5e7b29beef01b"},
-		{"value 65535", []uint16{65535}, rpaHex(t, "010fbfff80"), true,
+		{"value 65535", []uint16{65535}, rpaHex(t, "010fbfff80"),
 			"f604888baa2af992bba2f2511bc214e31c272608c23092cb8bc63e0d0630122b"},
-		{"two values", []uint16{1, 2}, rpaHex(t, "020e00020004"), true,
+		{"two values", []uint16{1, 2}, rpaHex(t, "020e00020004"),
 			"fc45657f3a482e5872d033a5c86387e5801c723c4c11caed079b92810a61b447"},
-		{"even values, k = 0", even, builder.EncodeRPAFilter(even), true,
+		{"even values, k = 0", even, builder.EncodeRPAFilter(even),
 			"61071102674b83e66e64057ced5188a431ca43ab0809e21805a1d618ecfee3b5"},
-		{"every value", every, builder.EncodeRPAFilter(every), true,
+		{"every value", every, builder.EncodeRPAFilter(every),
 			"7a672451d57673b0da774463ee18c04e3fe1d9aef1ce602135644a144dd0182c"},
-		{"k not the one N gives", []uint16{3}, rpaHex(t, "0100e0"), false,
-			"6a1c6edee65da70f38e0e3980d31c6189b7e8a63f77d539da46279a3aa57562a"},
 	}
 	for _, test := range tests {
 		got, err := builder.DecodeRPAFilter(test.data)
@@ -285,8 +278,8 @@ func TestRPAFilterAccepted(t *testing.T) {
 			t.Errorf("%s: decoded %d values, %v", test.name, len(got), err)
 			continue
 		}
-		if builder.RPAFilterCanonical(test.data, got) != test.canonical {
-			t.Errorf("%s: canonical %v, want %v", test.name, !test.canonical, test.canonical)
+		if !bytes.Equal(builder.EncodeRPAFilter(got), test.data) {
+			t.Errorf("%s: the values encode to other bytes", test.name)
 		}
 		hash := builder.GetRPAFilterHash(test.data)
 		if hex.EncodeToString(hash[:]) != test.hash {
@@ -307,6 +300,11 @@ func TestRPAFilterRefused(t *testing.T) {
 		{"count only", "01", builder.ErrRPAFilterTruncated},
 		{"no stream", "010f", builder.ErrRPAFilterTruncated},
 		{"k above 15", "0110000000", builder.ErrRPAFilterK},
+		// The value 3 with k = 0, where one value gives k = 15: an
+		// encoding of the values other than the one, which the
+		// specification refuses since its amendment of 2026-11-16.
+		{"k not the one N gives", "0100e0", builder.ErrRPAFilterK},
+		{"k one below the one N gives", "010e0003", builder.ErrRPAFilterK},
 		{"gap of 0", "020e000a0000", builder.ErrRPAFilterGap},
 		{"value above 65535", "010fc00000", builder.ErrRPAFilterValue},
 		{"sum above 65535", "020eefffc00080", builder.ErrRPAFilterValue},

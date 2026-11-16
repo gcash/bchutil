@@ -37,10 +37,6 @@ const (
 	// hold: every 16-bit value.
 	RPAFilterMaxValues = 1 << 16
 
-	// rpaFilterMaxK is the largest Rice parameter a filter can have, the one
-	// a filter of one value has.
-	rpaFilterMaxK = 15
-
 	// rpaFilterKScale is round(65536 * ln 2), from which the Rice parameter
 	// for a number of values follows.
 	rpaFilterKScale = 45426
@@ -56,8 +52,10 @@ var (
 	ErrRPAFilterCount = errors.New("input prefix filter count is not in its " +
 		"shortest form or is above 65,536")
 
-	// ErrRPAFilterK is returned for a Rice parameter above 15.
-	ErrRPAFilterK = errors.New("input prefix filter parameter is above 15")
+	// ErrRPAFilterK is returned for a Rice parameter other than the one the
+	// count gives, so that a set of values has one encoding.
+	ErrRPAFilterK = errors.New("input prefix filter parameter is not the one " +
+		"its count gives")
 
 	// ErrRPAFilterGap is returned for a gap of 0 after the first value: a
 	// value repeated, which the set holds once.
@@ -215,11 +213,10 @@ func (r *rpaBitReader) bit() (bool, bool) {
 
 // DecodeRPAFilter decodes an input prefix filter into its values, in order.
 // It refuses a count not in its shortest form or above 65,536, a parameter
-// above 15, a value repeated or above 65,535, fewer values than the count,
-// a set padding bit and trailing bytes. A parameter other than the one the
-// count gives is not refused, as the encoding allows it; such bytes have
-// another hash than the filter a node builds, so the header chain tells them
-// apart, and RPAFilterCanonical tells them apart from the bytes alone.
+// other than the one the count gives, a value repeated or above 65,535, fewer
+// values than the count, a set padding bit and trailing bytes, so that the
+// bytes it takes are the one encoding of their values, the one
+// EncodeRPAFilter gives.
 func DecodeRPAFilter(b []byte) ([]uint16, error) {
 	r := bytes.NewReader(b)
 	n, err := wire.ReadVarInt(r, 0)
@@ -246,7 +243,7 @@ func DecodeRPAFilter(b []byte) ([]uint16, error) {
 		return nil, ErrRPAFilterTruncated
 	}
 	k := rest[0]
-	if k > rpaFilterMaxK {
+	if k != RPAFilterK(int(n)) {
 		return nil, ErrRPAFilterK
 	}
 	br := rpaBitReader{b: rest[1:]}
@@ -299,13 +296,6 @@ func DecodeRPAFilter(b []byte) ([]uint16, error) {
 		}
 	}
 	return values, nil
-}
-
-// RPAFilterCanonical reports whether filter bytes are the one encoding of the
-// values they decode to, that EncodeRPAFilter gives: their Rice parameter is
-// the one their count gives.
-func RPAFilterCanonical(b []byte, values []uint16) bool {
-	return bytes.Equal(b, EncodeRPAFilter(values))
 }
 
 // RPAFilterMatch reports whether sorted values hold one whose first bits
