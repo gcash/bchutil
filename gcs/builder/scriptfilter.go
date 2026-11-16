@@ -17,10 +17,12 @@ import (
 )
 
 // The script filter (filter type 1) lists the locking scripts of the outputs
-// a block creates and of the outputs it spends, and the token categories of
-// both. A wallet matches it with its own scripts and token categories only:
-// spending one of its coins matches the script that received it, so it does
-// not watch outpoints as it does on the basic filter.
+// a block creates and of the outputs it spends, the token categories of both,
+// and the IDs of the block's transactions. A wallet matches it with its own
+// scripts and token categories only: spending one of its coins matches the
+// script that received it, so it does not watch outpoints as it does on the
+// basic filter. A client that knows a transaction's ID finds its block by
+// that ID alone.
 //
 // The filter cannot be rebuilt from the block alone, since the scripts of
 // spent outputs sit in older blocks. So each block's entries are also kept as
@@ -32,7 +34,7 @@ import (
 
 // ScriptLeafSize is the size of a serialized leaf of a script filter's
 // entry tree: the key, the transaction's index in the block, the input or
-// output index, and the kind.
+// output index (0 for a transaction's own leaf), and the kind.
 const ScriptLeafSize = 32 + 4 + 4 + 1
 
 // ScriptLeafKind says what a leaf's key comes from.
@@ -53,10 +55,14 @@ const (
 	// ScriptLeafSpentCategory is the token category of an output the block
 	// spends.
 	ScriptLeafSpentCategory ScriptLeafKind = 3
+
+	// ScriptLeafTransaction is the ID of a transaction of the block. Every
+	// transaction, the coinbase included, has one, with index 0.
+	ScriptLeafTransaction ScriptLeafKind = 4
 )
 
-// ScriptLeaf is one occurrence of a key in a block: a script or a token
-// category, and where in the block it occurs.
+// ScriptLeaf is one occurrence of a key in a block: a script, a token
+// category or a transaction ID, and where in the block it occurs.
 type ScriptLeaf struct {
 	Key     [32]byte
 	TxIndex uint32
@@ -115,6 +121,17 @@ func CategoryKey(category [32]byte) [32]byte {
 	return sha256.Sum256(b[:])
 }
 
+// TxidKey returns the key of a transaction: the SHA-256 of 0x02 followed by
+// its ID in internal byte order, as an outpoint holds it. A token category is
+// the ID of the transaction that created it, so the tag keeps a transaction's
+// key apart from the key of the category it created.
+func TxidKey(txid chainhash.Hash) [32]byte {
+	var b [33]byte
+	b[0] = 0x02
+	copy(b[1:], txid[:])
+	return sha256.Sum256(b[:])
+}
+
 // filtersScript reports whether a locking script gets a key: an empty script
 // and one that starts with OP_RETURN do not, since no wallet watches them.
 func filtersScript(script []byte) bool {
@@ -136,8 +153,9 @@ var ErrPrevOutScripts = errors.New("the spent output scripts do not match " +
 //
 // For every output the block creates, coinbase included, and every output it
 // spends, the locking script gets a leaf unless it is empty or starts with
-// OP_RETURN, and a token category gets a leaf of its own. A key that occurs
-// more than once in the block gets one leaf for each occurrence.
+// OP_RETURN, and a token category gets a leaf of its own. Every transaction,
+// coinbase included, gets a leaf of its ID. A key that occurs more than once
+// in the block gets one leaf for each occurrence.
 func ScriptLeaves(block *wire.MsgBlock, prevOutScripts [][]byte) ([]ScriptLeaf, error) {
 	var leaves []ScriptLeaf
 	spent := 0
@@ -156,13 +174,19 @@ func ScriptLeaves(block *wire.MsgBlock, prevOutScripts [][]byte) ([]ScriptLeaf, 
 	return leaves, nil
 }
 
-// appendScriptLeaves appends the leaves of the transaction at txIndex: those
-// of the outputs it spends, unless it is a coinbase, then those of its
-// outputs. The scripts of the outputs it spends are read from prevOutScripts
-// from index spent on, and it returns the index after the last one it read.
+// appendScriptLeaves appends the leaves of the transaction at txIndex: that
+// of its ID, those of the outputs it spends, unless it is a coinbase, then
+// those of its outputs. The scripts of the outputs it spends are read from
+// prevOutScripts from index spent on, and it returns the index after the last
+// one it read.
 func appendScriptLeaves(leaves []ScriptLeaf, tx *wire.MsgTx, txIndex uint32, coinbase bool,
 	prevOutScripts [][]byte, spent int) ([]ScriptLeaf, int, error) {
 
+	leaves = append(leaves, ScriptLeaf{
+		Key:     TxidKey(tx.TxHash()),
+		TxIndex: txIndex,
+		Kind:    ScriptLeafTransaction,
+	})
 	if !coinbase {
 		for j := range tx.TxIn {
 			if spent >= len(prevOutScripts) {
